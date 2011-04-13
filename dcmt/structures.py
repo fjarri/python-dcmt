@@ -33,7 +33,9 @@
 
 from ctypes import *
 
+
 class mt_struct(Structure):
+
 	_fields_ = [
 		("aaa", c_uint),
 		("mm", c_int),
@@ -52,3 +54,12 @@ class mt_struct(Structure):
 		("i", c_int),
 		("state", POINTER(c_uint))
 	]
+
+	def __init__(self, raw_data, state_data):
+		Structure.__init__(self)
+		memmove(addressof(self), raw_data, sizeof(self))
+
+		state_class = c_uint * (len(state_data) / sizeof(c_uint))
+		state = state_class()
+		memmove(addressof(state), state_data, sizeof(state))
+		self.state = state
