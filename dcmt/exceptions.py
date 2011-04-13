@@ -1,0 +1,3 @@
+class DcmtError(Exception):
+	pass
+
