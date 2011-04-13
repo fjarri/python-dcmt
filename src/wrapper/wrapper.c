@@ -19,13 +19,34 @@ static PyObject* dcmt_get_mt_parameter_st(PyObject *self, PyObject *args)
 	mt_struct *mts = get_mt_parameter_st(w, p, seed);
 	if(NULL == mts)
 	{
-		// raise Exception
+		PyErr_SetString(class_DcmtError, "Internal dcmt error occurred");
 		return NULL;
 	}
 
-	// build ctypes.Structure object
+	// FIXME: original dcmt does not store the length of state vector anywhere,
+	// so I have to use this formula taken from seive.c::init_mt_search()
+	int state_len = p / w + 1;
 
-	return args;
+	// build ctypes.Structure object
+	// FIXME: ideally, I would want get_mt_parameter_st() to write
+	// directly into Structure object. It requires changing original dcmt.
+	// Less ideally, I would want to copy from *mts to Structure directly.
+	PyObject *mt_struct_args = Py_BuildValue("s#s#",
+		(const char *)mts, sizeof(mts),
+		(const char *)(mts->state), state_len * sizeof(uint32_t));
+	if(NULL == mt_struct_args)
+	{
+		return NULL;
+	}
+
+	PyObject *res = PyObject_CallObject(class_mt_struct, mt_struct_args);
+	Py_DECREF(mt_struct_args);
+	if(NULL == res)
+	{
+		return NULL;
+	}
+
+	return res;
 }
 
 
