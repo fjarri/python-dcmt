@@ -10,7 +10,8 @@ static PyObject* dcmt_get_mt_parameter_st(PyObject *self, PyObject *args)
 	int w, p;
 	uint32_t seed;
 
-	if(!PyArg_ParseTuple(args, "iil:get_mt_parameter_st", &w, &p, &seed)) {
+	if(!PyArg_ParseTuple(args, "iiI:get_mt_parameter_st", &w, &p, &seed))
+	{
 			return NULL;
 	}
 
