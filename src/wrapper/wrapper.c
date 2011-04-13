@@ -3,7 +3,8 @@
 
 PyMODINIT_FUNC init_libdcmt(void);
 
-static PyObject* dcmt_structures = NULL;
+static PyObject* class_mt_struct = NULL;
+static PyObject* class_DcmtError = NULL;
 
 static PyObject* dcmt_get_mt_parameter_st(PyObject *self, PyObject *args)
 {
@@ -41,5 +42,25 @@ PyMODINIT_FUNC init_libdcmt(void)
 	if(NULL == self)
 		return;
 
-	//dcmt_structures = PyImport_ImportModule("dcmt.structures");
+	// import structure classes from .structures module
+
+	PyObject *dcmt_structures = PyImport_ImportModule("dcmt.structures");
+	if(NULL == dcmt_structures)
+		return;
+
+	class_mt_struct = PyObject_GetAttrString(dcmt_structures, "mt_struct");
+	Py_DECREF(dcmt_structures);
+	if(NULL == class_mt_struct)
+		return;
+
+	// import exception class
+
+	PyObject *dcmt_exceptions = PyImport_ImportModule("dcmt.exceptions");
+	if(NULL == dcmt_exceptions)
+		return;
+
+	class_DcmtError = PyObject_GetAttrString(dcmt_exceptions, "DcmtError");
+	Py_DECREF(dcmt_exceptions);
+	if(NULL == class_DcmtError)
+		return;
 }
