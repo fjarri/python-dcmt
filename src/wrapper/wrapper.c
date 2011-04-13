@@ -35,8 +35,8 @@ static PyMethodDef dcmt_methods[] = {
 
 PyMODINIT_FUNC init_libdcmt(void)
 {
-	PyObject *self = NULL;
-	self = Py_InitModule3("_libdcmt", dcmt_methods, "Dynamic creation of Mersenne twister RNGs.");
+	PyObject *self = Py_InitModule3("_libdcmt", dcmt_methods,
+		"Dynamic creation of Mersenne twister RNGs.");
 	if(NULL == self)
 		return;
 
