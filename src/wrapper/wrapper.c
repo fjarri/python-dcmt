@@ -28,12 +28,15 @@ static PyObject* dcmt_get_mt_parameter_st(PyObject *self, PyObject *args)
 	int state_len = p / w + 1;
 
 	// build ctypes.Structure object
+	//
 	// FIXME: ideally, I would want get_mt_parameter_st() to write
 	// directly into Structure object. It requires changing original dcmt.
 	// Less ideally, I would want to copy from *mts to Structure directly.
-	PyObject *mt_struct_args = Py_BuildValue("s#s#",
-		(const char *)mts, sizeof(mts),
-		(const char *)(mts->state), state_len * sizeof(uint32_t));
+	//
+	// Note: discarding state vector part of mt_struct, because
+	// it is not filled yet anyway
+	PyObject *mt_struct_args = Py_BuildValue("s#i",
+		(const char *)mts, sizeof(*mts), state_len);
 	if(NULL == mt_struct_args)
 	{
 		return NULL;
@@ -69,7 +72,7 @@ PyMODINIT_FUNC init_libdcmt(void)
 	if(NULL == dcmt_structures)
 		return;
 
-	class_mt_struct = PyObject_GetAttrString(dcmt_structures, "mt_struct");
+	class_mt_struct = PyObject_GetAttrString(dcmt_structures, "get_mt_struct");
 	Py_DECREF(dcmt_structures);
 	if(NULL == class_mt_struct)
 		return;

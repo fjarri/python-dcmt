@@ -33,33 +33,35 @@
 
 from ctypes import *
 
+# Original library allocates two separate pieces of memory on a heap,
+# because the size of mt_struct depends on state vector size.
+# Since I will not use dcmt functions to delete mt_struct instances,
+# it is more convenient to keep everything in one struct,
+# using dynamic features of Python to build necessary class.
+def get_mt_struct(raw_data, state_len):
 
-class mt_struct(Structure):
+	class mt_struct(Structure):
+		_fields_ = [
+			("aaa", c_uint),
+			("mm", c_int),
+			("nn", c_int),
+			("rr", c_int),
+			("ww", c_int),
+			("wmask", c_uint),
+			("umask", c_uint),
+			("lmask", c_uint),
+			("shift0", c_int),
+			("shift1", c_int),
+			("shiftB", c_int),
+			("shiftC", c_int),
+			("maskB", c_uint),
+			("maskC", c_uint),
+			("i", c_int),
+			("state", POINTER(c_uint)),
+			("state_vec", c_uint * state_len) # not present in original mt_struct
+		]
 
-	_fields_ = [
-		("aaa", c_uint),
-		("mm", c_int),
-		("nn", c_int),
-		("rr", c_int),
-		("ww", c_int),
-		("wmask", c_uint),
-		("umask", c_uint),
-		("lmask", c_uint),
-		("shift0", c_int),
-		("shift1", c_int),
-		("shiftB", c_int),
-		("shiftC", c_int),
-		("maskB", c_uint),
-		("maskC", c_uint),
-		("i", c_int),
-		("state", POINTER(c_uint))
-	]
-
-	def __init__(self, raw_data, state_data):
-		Structure.__init__(self)
-		memmove(addressof(self), raw_data, sizeof(self))
-
-		state_class = c_uint * (len(state_data) / sizeof(c_uint))
-		state = state_class()
-		memmove(addressof(state), state_data, sizeof(state))
-		self.state = state
+	mts = mt_struct()
+	memmove(addressof(mts), raw_data, len(raw_data))
+	mts.state = cast(addressof(mts) + mt_struct.state_vec.offset, POINTER(c_uint))
+	return mts
