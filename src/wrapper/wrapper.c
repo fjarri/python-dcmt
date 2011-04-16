@@ -149,7 +149,7 @@ static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 
 static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject *kwds)
 {
-	char* keywords[] = {"bits", "power", "start_id", "max_id", "seed", NULL};
+	char* keywords[] = {"wordlen", "exponent", "start_id", "max_id", "seed", NULL};
 	int w = 32, p = 521, start_id = 0, max_id = 0;
 	PyObject *seed_obj = NULL;
 
