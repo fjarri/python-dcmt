@@ -232,11 +232,32 @@ static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *k
 	Py_RETURN_NONE;
 }
 
+static PyObject* dcmt_get_random(PyObject *self, PyObject *args)
+{
+	PyObject *mt_obj = NULL;
+
+	if(!PyArg_ParseTuple(args, "O:get_random", &mt_obj))
+		return NULL;
+
+	mt_struct *mt_ptr = NULL;
+	if(!parse_addressof(mt_obj, (void **)&mt_ptr))
+		return NULL;
+
+	size_t offset = (size_t)mt_ptr->state;
+	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
+	uint32_t num = genrand_mt(mt_ptr);
+	mt_ptr->state = (uint32_t*)offset;
+
+	return Py_BuildValue("I", num);
+}
+
 static PyMethodDef dcmt_methods[] = {
 	{"create_generators", dcmt_create_generators, METH_VARARGS | METH_KEYWORDS,
 		"Get structure(s) with MT parameters"},
 	{"init_generator", dcmt_init_generator, METH_VARARGS | METH_KEYWORDS,
 		"Initialize MT generator with seed"},
+	{"get_random", dcmt_get_random, METH_VARARGS,
+		"Get random value from a generator"},
 	{NULL, NULL}
 };
 
