@@ -1,22 +1,147 @@
 #include <Python.h>
 #include <dc.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 PyMODINIT_FUNC init_libdcmt(void);
 
-static PyObject* class_mt_struct = NULL;
+static PyObject* func_get_mt_structs = NULL;
 static PyObject* class_DcmtError = NULL;
 
-static PyObject* dcmt_get_mt_parameter_st(PyObject *self, PyObject *args)
+static int parse_seed(PyObject *obj, uint32_t *num)
 {
-	int w, p;
-	uint32_t seed;
-
-	if(!PyArg_ParseTuple(args, "iiI:get_mt_parameter_st", &w, &p, &seed))
+	if(NULL == obj || Py_None == obj)
 	{
-			return NULL;
+		*num = (uint32_t)time(NULL);
+		return true;
 	}
 
-	mt_struct *mts = get_mt_parameter_st(w, p, seed);
+	if(PyInt_Check(obj))
+	{
+		long num_long = PyInt_AsLong(obj);
+		if(-1 == num_long && PyErr_Occurred())
+			return false;
+
+		*num = (uint32_t)num_long;
+		return true;
+	}
+	else if(PyLong_Check(obj))
+	{
+		long num_long = PyLong_AsLong(obj);
+		if(-1 == num_long && PyErr_Occurred())
+			return false;
+
+		*num = (uint32_t)num_long;
+		return true;
+	}
+	else
+	{
+		PyErr_SetString(class_DcmtError, "Seed should be a subtype of int or long");
+		return false;
+	}
+}
+
+static int get_state_len(int w, int p)
+{
+	// FIXME: original dcmt does not store the length of state vector anywhere,
+	// so I have to use this formula taken from seive.c::init_mt_search()
+	return p / w + 1;
+}
+
+static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
+	long *elem_size, long *state_vec_offset)
+{
+	PyObject *func_args = Py_BuildValue("ii", state_len, count);
+	if(NULL == func_args)
+		return NULL;
+
+	PyObject *res = PyObject_CallObject(func_get_mt_structs, func_args);
+	Py_DECREF(func_args);
+	if(NULL == res)
+		return NULL;
+
+	// Parse get_mt_structs() return value: (mts object,
+	// address of mts object buffer, size of mts object buffer, offset of state vector)
+	PyObject *array_obj = NULL;
+	PyObject *array_ptr_obj = NULL;
+	PyObject *elem_size_obj = NULL;
+	PyObject *state_vec_offset_obj = NULL;
+	if(!PyArg_UnpackTuple(res, "create_generators", 4, 4,
+			&array_obj, &array_ptr_obj, &elem_size_obj, &state_vec_offset_obj))
+	{
+		Py_DECREF(res);
+		return NULL;
+	}
+
+	long ptr = 0;
+
+	// get array pointer
+	if(PyInt_Check(array_ptr_obj))
+	{
+		ptr = PyInt_AsLong(array_ptr_obj);
+		if(-1 == ptr && PyErr_Occurred())
+		{
+			Py_DECREF(res);
+			return NULL;
+		}
+	}
+	else if(PyLong_Check(array_ptr_obj))
+	{
+		ptr = PyLong_AsLong(array_ptr_obj);
+		if(-1 == ptr && PyErr_Occurred())
+		{
+			Py_DECREF(res);
+			return NULL;
+		}
+	}
+	else
+	{
+		PyErr_SetString(class_DcmtError, "Pointer should be a subtype of int or long");
+		Py_DECREF(res);
+		return NULL;
+	}
+
+	*array_ptr = (void *)ptr;
+
+	// get element size
+	*elem_size = PyInt_AsLong(elem_size_obj);
+	if(-1 == *elem_size && PyErr_Occurred())
+	{
+		Py_DECREF(res);
+		return NULL;
+	}
+
+	// get state vector offset
+	*state_vec_offset = PyInt_AsLong(state_vec_offset_obj);
+	if(-1 == *state_vec_offset && PyErr_Occurred())
+	{
+		Py_DECREF(res);
+		return NULL;
+	}
+
+	Py_DECREF(array_ptr_obj);
+	Py_DECREF(elem_size_obj);
+	Py_DECREF(state_vec_offset_obj);
+
+	return array_obj;
+}
+
+static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject *kwds)
+{
+	char* keywords[] = {"bits", "power", "start_id", "max_id", "seed", NULL};
+	int w = 32, p = 521, start_id = 0, max_id = 0;
+	PyObject *seed_obj = NULL;
+
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|iiiiO:create_generators", keywords,
+			&w, &p, &start_id, &max_id, &seed_obj))
+		return NULL;
+
+	uint32_t seed;
+	if(!parse_seed(seed_obj, &seed))
+		return NULL;
+
+	int count = -1;
+	mt_struct **mts = get_mt_parameters_st(w, p, start_id, max_id, seed, &count);
 	if(NULL == mts)
 	{
 		PyErr_SetString(class_DcmtError, "Internal dcmt error occurred");
@@ -25,37 +150,45 @@ static PyObject* dcmt_get_mt_parameter_st(PyObject *self, PyObject *args)
 
 	// FIXME: original dcmt does not store the length of state vector anywhere,
 	// so I have to use this formula taken from seive.c::init_mt_search()
-	int state_len = p / w + 1;
+	int state_len = get_state_len(w, p);
 
-	// build ctypes.Structure object
+	// build ctypes.Structure array
 	//
 	// FIXME: ideally, I would want get_mt_parameter_st() to write
 	// directly into Structure object. It requires changing original dcmt.
 	// Less ideally, I would want to copy from *mts to Structure directly.
-	//
-	// Note: discarding state vector part of mt_struct, because
-	// it is not filled yet anyway
-	PyObject *mt_struct_args = Py_BuildValue("s#i",
-		(const char *)mts, sizeof(*mts), state_len);
-	if(NULL == mt_struct_args)
+	char *array_ptr = NULL;
+	long elem_size = 0, state_vec_offset = 0;
+	PyObject *array_obj = create_mt_array(state_len, count,
+		(void **)&array_ptr, &elem_size, &state_vec_offset);
+	if(NULL == array_obj)
 	{
+		free_mt_struct_array(mts, count);
 		return NULL;
 	}
 
-	PyObject *res = PyObject_CallObject(class_mt_struct, mt_struct_args);
-	Py_DECREF(mt_struct_args);
-	if(NULL == res)
+	// Fill structures
+	for(int i = 0; i < count; i++)
 	{
-		return NULL;
+		// discarding state vector part of mt_struct, as well as
+		// mt_struct.i field, since they are filled only on initialization
+		memcpy(array_ptr + elem_size * i, mts[i], offsetof(mt_struct, i));
+
+		// This will be substituted before usage.
+		// Keeping offset and not the actual pointer to allow
+		// user copy this struct in Python freely.
+		((mt_struct*)(array_ptr + elem_size * i))->state = (uint32_t*)state_vec_offset;
 	}
 
-	return res;
+	free_mt_struct_array(mts, count);
+
+	return array_obj;
 }
 
 
 static PyMethodDef dcmt_methods[] = {
-	{"get_mt_parameter_st", dcmt_get_mt_parameter_st, METH_VARARGS,
-		"Get structure with MT parameters"},
+	{"create_generators", dcmt_create_generators, METH_VARARGS | METH_KEYWORDS,
+		"Get structure(s) with MT parameters"},
 	{NULL, NULL}
 };
 
@@ -72,9 +205,9 @@ PyMODINIT_FUNC init_libdcmt(void)
 	if(NULL == dcmt_structures)
 		return;
 
-	class_mt_struct = PyObject_GetAttrString(dcmt_structures, "get_mt_struct");
+	func_get_mt_structs = PyObject_GetAttrString(dcmt_structures, "get_mt_structs");
 	Py_DECREF(dcmt_structures);
-	if(NULL == class_mt_struct)
+	if(NULL == func_get_mt_structs)
 		return;
 
 	// import exception class

@@ -38,7 +38,7 @@ from ctypes import *
 # Since I will not use dcmt functions to delete mt_struct instances,
 # it is more convenient to keep everything in one struct,
 # using dynamic features of Python to build necessary class.
-def get_mt_struct(raw_data, state_len):
+def get_mt_structs(state_len, num):
 
 	class mt_struct(Structure):
 		_fields_ = [
@@ -65,7 +65,7 @@ def get_mt_struct(raw_data, state_len):
 			("state_vec", c_uint32 * state_len)
 		]
 
-	mts = mt_struct()
-	memmove(addressof(mts), raw_data, len(raw_data))
-	mts.state = cast(addressof(mts) + mt_struct.state_vec.offset, POINTER(c_uint))
-	return mts
+	mts = (mt_struct * num)()
+
+	# last two numbers are required to account for alignment in extension
+	return mts, addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset
