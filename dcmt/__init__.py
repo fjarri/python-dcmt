@@ -1,4 +1,3 @@
-VERSION = (0, 6, 1, 1)
-
+from .version import VERSION
 from .exceptions import DcmtError
 from ._libdcmt import create_generators, init_generator, get_random
