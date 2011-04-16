@@ -58,11 +58,15 @@ class TestErrors(unittest.TestCase):
 
 		# correct seeds
 		for seed in (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1)):
-			create_generators(seed=seed)
+			mts = create_generators(seed=seed)
+			init_generator(mts[0], seed=seed)
 
 		# incorrect seeds
 		for seed in (-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32)):
 			self.assertRaises(DcmtError, create_generators, seed=seed)
+
+			mts = create_generators()
+			self.assertRaises(DcmtError, init_generator, mts[0], seed=seed)
 
 
 if __name__ == '__main__':
