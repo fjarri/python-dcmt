@@ -8,6 +8,8 @@ PyMODINIT_FUNC init_libdcmt(void);
 static PyObject* func_get_mt_structs = NULL; // dcmt.structures.get_mt_structs()
 static PyObject* func_addressof = NULL; // ctypes.addressof()
 static PyObject* class_DcmtError = NULL; // dcmt.exceptions.DcmtError
+static PyObject* seed_min = NULL; // minimum value of seed
+static PyObject* seed_max = NULL; // maximum value of seed
 
 // Modified genmtrand.c::sgenrand_mt(), taken from nVidia Cuda SDK 4.0
 //
@@ -41,31 +43,44 @@ static int parse_seed(PyObject *obj, uint32_t *num)
 		return true;
 	}
 
-	long num_long;
+	// check validity
 
-	if(PyInt_Check(obj))
-	{
-		num_long = PyInt_AsLong(obj);
-		if(-1 == num_long && PyErr_Occurred())
-			return false;
-	}
-	else if(PyLong_Check(obj))
-	{
-		num_long = PyLong_AsLong(obj);
-		if(-1 == num_long && PyErr_Occurred())
-			return false;
-	}
-	else
+	int ge_min = PyObject_RichCompareBool(obj, seed_min, Py_GE);
+	int le_max = PyObject_RichCompareBool(obj, seed_max, Py_LE);
+
+	int is_int = PyInt_Check(obj);
+	int is_long = is_int ? false : PyLong_Check(obj);
+
+	if(!is_int && !is_long)
 	{
 		PyErr_SetString(class_DcmtError, "Seed must be a subtype of int or long");
 		return false;
 	}
 
-	// check validity
-	if(num_long < 0 || num_long > 4294967295)
+	if(-1 == ge_min || -1 == le_max)
+		return false;
+
+	if(!ge_min || !le_max)
 	{
 		PyErr_SetString(class_DcmtError, "Seed must be between 0 and 2^32-1");
 		return false;
+	}
+
+	// convert to unsigned long;
+	// not checking for overflow, since we already did it using interpreter functions
+	unsigned long num_long = 0;
+
+	if(is_int)
+	{
+		num_long = PyInt_AsUnsignedLongMask(obj);
+		if(PyErr_Occurred())
+			return false;
+	}
+	else if(is_long)
+	{
+		num_long = PyLong_AsUnsignedLongMask(obj);
+		if(PyErr_Occurred())
+			return false;
 	}
 
 	*num = (uint32_t)num_long;
@@ -421,4 +436,8 @@ PyMODINIT_FUNC init_libdcmt(void)
 	Py_DECREF(ctypes);
 	if(NULL == func_addressof)
 		return;
+
+	// initialize seed range
+	seed_min = PyInt_FromLong(0);
+	seed_max = PyInt_FromSize_t(4294967295);
 }
