@@ -35,4 +35,4 @@ def get_mt_structs(state_len, num):
 	mts = (mt_struct * num)()
 
 	# last two numbers are required to account for alignment in extension
-	return mts, addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset
+	return mts, sizeof(mt_struct), mt_struct.state_vec.offset

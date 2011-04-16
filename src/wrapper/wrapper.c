@@ -112,19 +112,19 @@ static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 		return NULL;
 
 	// Parse get_mt_structs() return value: (mts object,
-	// address of mts object buffer, size of mts object buffer, offset of state vector)
+	// size of mts object buffer, offset of state vector)
 	PyObject *array_obj = NULL;
-	PyObject *array_ptr_obj = NULL;
 	PyObject *elem_size_obj = NULL;
 	PyObject *state_vec_offset_obj = NULL;
-	if(!PyArg_UnpackTuple(res, "create_generators", 4, 4,
-			&array_obj, &array_ptr_obj, &elem_size_obj, &state_vec_offset_obj))
+	if(!PyArg_UnpackTuple(res, "create_generators", 3, 3,
+			&array_obj, &elem_size_obj, &state_vec_offset_obj))
 	{
 		Py_DECREF(res);
 		return NULL;
 	}
 
-	if(!parse_pointer(array_ptr_obj, array_ptr))
+	// extract data buffer address
+	if(!parse_addressof(array_obj, array_ptr))
 	{
 		Py_DECREF(res);
 		return NULL;
