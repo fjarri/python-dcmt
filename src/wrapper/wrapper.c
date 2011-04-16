@@ -9,6 +9,28 @@ static PyObject* func_get_mt_structs = NULL; // dcmt.structures.get_mt_structs()
 static PyObject* func_addressof = NULL; // ctypes.addressof()
 static PyObject* class_DcmtError = NULL; // dcmt.exceptions.DcmtError
 
+// Modified genmtrand.c::sgenrand_mt(), taken from nVidia Cuda SDK 4.0
+//
+// Victor Podlozhnyuk @ 05/13/2007:
+// 1) Fixed sgenrand_mt():
+//    - Fixed loop indexing: 'i' variable was off by one.
+//    - apply wmask right on the state element initialization instead
+//      of separate loop, which could produce machine-dependent results(wrong).
+// 2) Slightly reformatted sources to be included into CUDA SDK.
+static void sgenrand_mt_modified(uint32_t seed, mt_struct *mts){
+    int i;
+
+    mts->state[0] = seed & mts->wmask;
+
+    for(i = 1; i < mts->nn; i++){
+        mts->state[i] = (UINT32_C(1812433253) * (mts->state[i - 1] ^ (mts->state[i - 1] >> 30)) + i) & mts->wmask;
+        /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
+        /* In the previous versions, MSBs of the seed affect   */
+        /* only MSBs of the array mt[].                        */
+    }
+    mts->i = mts->nn;
+}
+
 // Extract seed value from int or long object and test it for validity
 static int parse_seed(PyObject *obj, uint32_t *num)
 {
@@ -322,7 +344,7 @@ static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *k
 	// temporarily substitute offset with real pointer which dcmt expects
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
-	sgenrand_mt(seed, mt_ptr);
+	sgenrand_mt_modified(seed, mt_ptr);
 	mt_ptr->state = (uint32_t*)offset;
 
 	Py_RETURN_NONE;
