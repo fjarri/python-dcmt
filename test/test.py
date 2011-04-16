@@ -50,6 +50,20 @@ class TestErrors(unittest.TestCase):
 		self.assertRaises(DcmtError, create_generators, wordlen=31, exponent=521,
 			start_id=7, max_id=10, seed=1)
 
+	def testSeed(self):
+
+		# since keywords are processed in extension, test that even not mentioning
+		# keyword parameter works
+		create_generators()
+
+		# correct seeds
+		for seed in (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1)):
+			create_generators(seed=seed)
+
+		# incorrect seeds
+		for seed in (-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32)):
+			self.assertRaises(DcmtError, create_generators, seed=seed)
+
 
 if __name__ == '__main__':
 

@@ -17,29 +17,35 @@ static int parse_seed(PyObject *obj, uint32_t *num)
 		return true;
 	}
 
+	long num_long;
+
 	if(PyInt_Check(obj))
 	{
-		long num_long = PyInt_AsLong(obj);
+		num_long = PyInt_AsLong(obj);
 		if(-1 == num_long && PyErr_Occurred())
 			return false;
-
-		*num = (uint32_t)num_long;
-		return true;
 	}
 	else if(PyLong_Check(obj))
 	{
-		long num_long = PyLong_AsLong(obj);
+		num_long = PyLong_AsLong(obj);
 		if(-1 == num_long && PyErr_Occurred())
 			return false;
-
-		*num = (uint32_t)num_long;
-		return true;
 	}
 	else
 	{
 		PyErr_SetString(class_DcmtError, "Seed must be a subtype of int or long");
 		return false;
 	}
+
+	// check validity
+	if(num_long < 0 || num_long > 4294967295)
+	{
+		PyErr_SetString(class_DcmtError, "Seed must be between 0 and 2^32-1");
+		return false;
+	}
+
+	*num = (uint32_t)num_long;
+	return true;
 }
 
 static int parse_pointer(PyObject *obj, void **ptr)
