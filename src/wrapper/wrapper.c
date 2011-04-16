@@ -5,12 +5,14 @@
 
 PyMODINIT_FUNC init_libdcmt(void);
 
-static PyObject* func_get_mt_structs = NULL;
-static PyObject* func_addressof = NULL;
-static PyObject* class_DcmtError = NULL;
+static PyObject* func_get_mt_structs = NULL; // dcmt.structures.get_mt_structs()
+static PyObject* func_addressof = NULL; // ctypes.addressof()
+static PyObject* class_DcmtError = NULL; // dcmt.exceptions.DcmtError
 
+// Extract seed value from int or long object and test it for validity
 static int parse_seed(PyObject *obj, uint32_t *num)
 {
+	// if seed is not set, take current time
 	if(NULL == obj || Py_None == obj)
 	{
 		*num = (uint32_t)time(NULL);
@@ -48,6 +50,7 @@ static int parse_seed(PyObject *obj, uint32_t *num)
 	return true;
 }
 
+// Extract pointer value from int or long
 static int parse_pointer(PyObject *obj, void **ptr)
 {
 	long long_ptr;
@@ -73,17 +76,21 @@ static int parse_pointer(PyObject *obj, void **ptr)
 	return true;
 }
 
+// Extract address of ctypes.Structure instance
 static int parse_addressof(PyObject *obj, void **ptr)
 {
+	// build argument list for ctypes.addressof()
 	PyObject *func_args = Py_BuildValue("(O)", obj);
 	if(NULL == func_args)
 		return false;
 
+	// call ctypes.addressof()
 	PyObject *res = PyObject_CallObject(func_addressof, func_args);
 	Py_DECREF(func_args);
 	if(NULL == res)
 		return false;
 
+	// extract pointer from result
 	int result = true;
 	if(!parse_pointer(res, ptr))
 		result = false;
@@ -92,13 +99,15 @@ static int parse_addressof(PyObject *obj, void **ptr)
 	return result;
 }
 
+// Original dcmt does not store the length of state vector anywhere in mt_struct,
+// so I have to use this formula taken from seive.c::init_mt_search()
 static int get_state_len(int w, int p)
 {
-	// FIXME: original dcmt does not store the length of state vector anywhere,
-	// so I have to use this formula taken from seive.c::init_mt_search()
 	return p / w + 1;
 }
 
+// Creates and returns array of mt_struct (derived from ctypes.Structure)
+// along with the pointer to the raw data of this array
 static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 	long *elem_size, long *state_vec_offset)
 {
@@ -154,7 +163,7 @@ static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 	return array_obj;
 }
 
-
+// Check that given word length is supported
 static int test_wordlen_validity(int w)
 {
 	int valid = (w == 31 || w == 32);
@@ -164,6 +173,7 @@ static int test_wordlen_validity(int w)
 	return valid;
 }
 
+// Check that given Mersenne exponent is supported
 static int test_exponent_validity(int p)
 {
 	int valid;
@@ -199,6 +209,7 @@ static int test_exponent_validity(int p)
 	return valid;
 }
 
+// Check that given IDs are supported and consistent
 static int test_id_validity(int w, int p, int start_id, int max_id)
 {
 	if(start_id > max_id)
@@ -224,6 +235,8 @@ static int test_id_validity(int w, int p, int start_id, int max_id)
 	return true;
 }
 
+// Exported function:
+// create_generators(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None)
 static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject *kwds)
 {
 	char* keywords[] = {"wordlen", "exponent", "start_id", "max_id", "seed", NULL};
@@ -254,15 +267,9 @@ static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject
 		return NULL;
 	}
 
-	// FIXME: original dcmt does not store the length of state vector anywhere,
-	// so I have to use this formula taken from seive.c::init_mt_search()
 	int state_len = get_state_len(w, p);
 
 	// build ctypes.Structure array
-	//
-	// FIXME: ideally, I would want get_mt_parameter_st() to write
-	// directly into Structure object. It requires changing original dcmt.
-	// Less ideally, I would want to copy from *mts to Structure directly.
 	char *array_ptr = NULL;
 	long elem_size = 0, state_vec_offset = 0;
 	PyObject *array_obj = create_mt_array(state_len, count,
@@ -280,9 +287,10 @@ static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject
 		// mt_struct.i field, since they are filled only on initialization
 		memcpy(array_ptr + elem_size * i, mts[i], offsetof(mt_struct, i));
 
-		// This will be substituted before usage.
-		// Keeping offset and not the actual pointer to allow
-		// user copy this struct in Python freely.
+		// Pointer to state vector will be substituted during calls to
+		// sgenrand_mt()/genrand_mt()
+		// In the meantime we are keeping offset to state vector in 'state' field
+		// and not the actual pointer to allow user copy this struct in Python freely.
 		((mt_struct*)(array_ptr + elem_size * i))->state = (uint32_t*)state_vec_offset;
 	}
 
@@ -291,6 +299,8 @@ static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject
 	return array_obj;
 }
 
+// Exported function:
+// init_gernerator(mts, seed=None)
 static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *kwds)
 {
 	char* keywords[] = {"mts", "seed", NULL};
@@ -309,6 +319,7 @@ static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *k
 	if(!parse_addressof(mt_obj, (void **)&mt_ptr))
 		return NULL;
 
+	// temporarily substitute offset with real pointer which dcmt expects
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	sgenrand_mt(seed, mt_ptr);
@@ -317,6 +328,8 @@ static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *k
 	Py_RETURN_NONE;
 }
 
+// Exported function:
+// get_random(mts)
 static PyObject* dcmt_get_random(PyObject *self, PyObject *args)
 {
 	PyObject *mt_obj = NULL;
@@ -328,6 +341,7 @@ static PyObject* dcmt_get_random(PyObject *self, PyObject *args)
 	if(!parse_addressof(mt_obj, (void **)&mt_ptr))
 		return NULL;
 
+	// temporarily substitute offset with real pointer which dcmt expects
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	uint32_t num = genrand_mt(mt_ptr);
@@ -353,7 +367,7 @@ PyMODINIT_FUNC init_libdcmt(void)
 	if(NULL == self)
 		return;
 
-	// import structure classes from .structures module
+	// import structure building functions from .structures module
 
 	PyObject *dcmt_structures = PyImport_ImportModule("dcmt.structures");
 	if(NULL == dcmt_structures)
@@ -375,7 +389,7 @@ PyMODINIT_FUNC init_libdcmt(void)
 	if(NULL == class_DcmtError)
 		return;
 
-	// import ctypes.addressof
+	// import ctypes.addressof()
 
 	PyObject *ctypes = PyImport_ImportModule("ctypes");
 	if(NULL == ctypes)
