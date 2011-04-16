@@ -97,6 +97,16 @@ class TestBasics(unittest.TestCase):
 		for r0, r1 in zip(random_sets[0], random_sets[1]):
 			self.assertEqual(r0, r1)
 
+	def testRange(self):
+
+		for wordlen in (31, 32):
+			mts = create_generators(wordlen=wordlen, seed=99)
+			init_generator(mts[0])
+
+			for i in xrange(64):
+				r = get_random(mts[0])
+				self.assert_(r >= 0 and r < 2**wordlen)
+
 
 if __name__ == '__main__':
 
