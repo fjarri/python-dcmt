@@ -6,6 +6,7 @@
 PyMODINIT_FUNC init_libdcmt(void);
 
 static PyObject* func_get_mt_structs = NULL;
+static PyObject* func_addressof = NULL;
 static PyObject* class_DcmtError = NULL;
 
 static int parse_seed(PyObject *obj, uint32_t *num)
@@ -186,10 +187,50 @@ static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject
 	return array_obj;
 }
 
+static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *kwds)
+{
+	char* keywords[] = {"mts", "seed", NULL};
+	PyObject *mt_obj = NULL;
+	PyObject *seed_obj = NULL;
+
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:init_generator", keywords,
+			&mt_obj, &seed_obj))
+		return NULL;
+
+	uint32_t seed;
+	if(!parse_seed(seed_obj, &seed))
+		return NULL;
+
+	PyObject *func_args = Py_BuildValue("(O)", mt_obj);
+	if(NULL == func_args)
+		return NULL;
+
+	PyObject *res = PyObject_CallObject(func_addressof, func_args);
+	Py_DECREF(func_args);
+	if(NULL == res)
+		return NULL;
+
+	mt_struct *mt_ptr = NULL;
+	if(!parse_pointer(res, (void **)&mt_ptr))
+	{
+		Py_DECREF(res);
+		return NULL;
+	}
+	Py_DECREF(res);
+
+	size_t offset = (size_t)mt_ptr->state;
+	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
+	sgenrand_mt(seed, mt_ptr);
+	mt_ptr->state = (uint32_t*)offset;
+
+	Py_RETURN_NONE;
+}
 
 static PyMethodDef dcmt_methods[] = {
 	{"create_generators", dcmt_create_generators, METH_VARARGS | METH_KEYWORDS,
 		"Get structure(s) with MT parameters"},
+	{"init_generator", dcmt_init_generator, METH_VARARGS | METH_KEYWORDS,
+		"Initialize MT generator with seed"},
 	{NULL, NULL}
 };
 
@@ -220,5 +261,16 @@ PyMODINIT_FUNC init_libdcmt(void)
 	class_DcmtError = PyObject_GetAttrString(dcmt_exceptions, "DcmtError");
 	Py_DECREF(dcmt_exceptions);
 	if(NULL == class_DcmtError)
+		return;
+
+	// import ctypes.addressof
+
+	PyObject *ctypes = PyImport_ImportModule("ctypes");
+	if(NULL == ctypes)
+		return;
+
+	func_addressof = PyObject_GetAttrString(ctypes, "addressof");
+	Py_DECREF(ctypes);
+	if(NULL == func_addressof)
 		return;
 }
