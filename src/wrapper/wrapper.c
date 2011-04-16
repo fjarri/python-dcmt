@@ -194,21 +194,15 @@ static int test_exponent_validity(int p)
 
 static int test_id_validity(int w, int p, int start_id, int max_id)
 {
-	if(start_id < 0)
-	{
-		PyErr_SetString(class_DcmtError, "Starting ID must be equal to or greater than zero");
-		return false;
-	}
-
 	if(start_id > max_id)
 	{
 		PyErr_SetString(class_DcmtError, "Starting ID must be equal to or lower than maximum ID");
 		return false;
 	}
 
-	if(max_id > 65535)
+	if(start_id < 0 || max_id > 65535)
 	{
-		PyErr_SetString(class_DcmtError, "Maximum ID must be lower than 65536");
+		PyErr_SetString(class_DcmtError, "All IDs must lie between 0 and 65535");
 		return false;
 	}
 
