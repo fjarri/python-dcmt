@@ -146,9 +146,10 @@ static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 		return NULL;
 	}
 
-	Py_DECREF(array_ptr_obj);
-	Py_DECREF(elem_size_obj);
-	Py_DECREF(state_vec_offset_obj);
+	// UnpackTuple returns borrowed references, so we must take ownership of array_obj
+	// before releasing the whole tuple
+	Py_INCREF(array_obj);
+	Py_DECREF(res);
 
 	return array_obj;
 }
