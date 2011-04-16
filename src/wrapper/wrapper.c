@@ -67,6 +67,25 @@ static int parse_pointer(PyObject *obj, void **ptr)
 	return true;
 }
 
+static int parse_addressof(PyObject *obj, void **ptr)
+{
+	PyObject *func_args = Py_BuildValue("(O)", obj);
+	if(NULL == func_args)
+		return false;
+
+	PyObject *res = PyObject_CallObject(func_addressof, func_args);
+	Py_DECREF(func_args);
+	if(NULL == res)
+		return false;
+
+	int result = true;
+	if(!parse_pointer(res, ptr))
+		result = false;
+
+	Py_DECREF(res);
+	return result;
+}
+
 static int get_state_len(int w, int p)
 {
 	// FIXME: original dcmt does not store the length of state vector anywhere,
@@ -201,22 +220,9 @@ static PyObject* dcmt_init_generator(PyObject *self, PyObject *args, PyObject *k
 	if(!parse_seed(seed_obj, &seed))
 		return NULL;
 
-	PyObject *func_args = Py_BuildValue("(O)", mt_obj);
-	if(NULL == func_args)
-		return NULL;
-
-	PyObject *res = PyObject_CallObject(func_addressof, func_args);
-	Py_DECREF(func_args);
-	if(NULL == res)
-		return NULL;
-
 	mt_struct *mt_ptr = NULL;
-	if(!parse_pointer(res, (void **)&mt_ptr))
-	{
-		Py_DECREF(res);
+	if(!parse_addressof(mt_obj, (void **)&mt_ptr))
 		return NULL;
-	}
-	Py_DECREF(res);
 
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
