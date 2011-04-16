@@ -1,4 +1,7 @@
 build/*
 dist/*
 dcmt.tmproj
+doc/build/*
+dcmt/*.pyc
+dcmt.egg-info/*
 
