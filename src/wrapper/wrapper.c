@@ -37,7 +37,7 @@ static int parse_seed(PyObject *obj, uint32_t *num)
 	}
 	else
 	{
-		PyErr_SetString(class_DcmtError, "Seed should be a subtype of int or long");
+		PyErr_SetString(class_DcmtError, "Seed must be a subtype of int or long");
 		return false;
 	}
 }
@@ -59,7 +59,7 @@ static int parse_pointer(PyObject *obj, void **ptr)
 	}
 	else
 	{
-		PyErr_SetString(class_DcmtError, "Pointer should be a subtype of int or long");
+		PyErr_SetString(class_DcmtError, "Pointer must be a subtype of int or long");
 		return false;
 	}
 
