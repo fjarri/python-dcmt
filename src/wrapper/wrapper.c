@@ -41,6 +41,31 @@ static int parse_seed(PyObject *obj, uint32_t *num)
 	}
 }
 
+static int parse_pointer(PyObject *obj, void **ptr)
+{
+	long long_ptr;
+	if(PyInt_Check(obj))
+	{
+		long_ptr = PyInt_AsLong(obj);
+		if(-1 == long_ptr && PyErr_Occurred())
+			return false;
+	}
+	else if(PyLong_Check(obj))
+	{
+		long_ptr = PyLong_AsLong(obj);
+		if(-1 == long_ptr && PyErr_Occurred())
+			return false;
+	}
+	else
+	{
+		PyErr_SetString(class_DcmtError, "Pointer should be a subtype of int or long");
+		return false;
+	}
+
+	*ptr = (void *)long_ptr;
+	return true;
+}
+
 static int get_state_len(int w, int p)
 {
 	// FIXME: original dcmt does not store the length of state vector anywhere,
@@ -73,35 +98,11 @@ static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 		return NULL;
 	}
 
-	long ptr = 0;
-
-	// get array pointer
-	if(PyInt_Check(array_ptr_obj))
+	if(!parse_pointer(array_ptr_obj, array_ptr))
 	{
-		ptr = PyInt_AsLong(array_ptr_obj);
-		if(-1 == ptr && PyErr_Occurred())
-		{
-			Py_DECREF(res);
-			return NULL;
-		}
-	}
-	else if(PyLong_Check(array_ptr_obj))
-	{
-		ptr = PyLong_AsLong(array_ptr_obj);
-		if(-1 == ptr && PyErr_Occurred())
-		{
-			Py_DECREF(res);
-			return NULL;
-		}
-	}
-	else
-	{
-		PyErr_SetString(class_DcmtError, "Pointer should be a subtype of int or long");
 		Py_DECREF(res);
 		return NULL;
 	}
-
-	*array_ptr = (void *)ptr;
 
 	// get element size
 	*elem_size = PyInt_AsLong(elem_size_obj);
