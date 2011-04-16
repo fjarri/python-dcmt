@@ -147,6 +147,82 @@ static PyObject *create_mt_array(int state_len, int count, void **array_ptr,
 	return array_obj;
 }
 
+
+static int test_wordlen_validity(int w)
+{
+	int valid = (w == 31 || w == 32);
+	if(!valid)
+		PyErr_SetString(class_DcmtError, "Word length must be equal to 31 or 32");
+
+	return valid;
+}
+
+static int test_exponent_validity(int p)
+{
+	int valid;
+
+	// taken from seive.c::proper_mersenne_exponent()
+    switch(p)
+	{
+	case 521:
+	case 607:
+	case 1279:
+	case 2203:
+	case 2281:
+	case 3217:
+	case 4253:
+	case 4423:
+	case 9689:
+	case 9941:
+	case 11213:
+	case 19937:
+	case 21701:
+	case 23209:
+	case 44497:
+		valid = true;
+		break;
+    default:
+		valid = false;
+    }
+
+	if(!valid)
+		PyErr_SetString(class_DcmtError,
+			"Mersenne exponent is incorrect or not from a supported set");
+
+	return valid;
+}
+
+static int test_id_validity(int w, int p, int start_id, int max_id)
+{
+	if(start_id < 0)
+	{
+		PyErr_SetString(class_DcmtError, "Starting ID must be equal to or greater than zero");
+		return false;
+	}
+
+	if(start_id > max_id)
+	{
+		PyErr_SetString(class_DcmtError, "Starting ID must be equal to or lower than maximum ID");
+		return false;
+	}
+
+	if(max_id > 65535)
+	{
+		PyErr_SetString(class_DcmtError, "Maximum ID must be lower than 65536");
+		return false;
+	}
+
+	// known bug - algorithm can't create generator for w=31, p=521, id=9
+	if(w == 31 && p == 521 && start_id <= 9 && max_id >= 9)
+	{
+		PyErr_SetString(class_DcmtError,
+			"Known bug: cannot create generator for wordlen=31, exponent=521, id=9");
+		return false;
+	}
+
+	return true;
+}
+
 static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject *kwds)
 {
 	char* keywords[] = {"wordlen", "exponent", "start_id", "max_id", "seed", NULL};
@@ -157,9 +233,17 @@ static PyObject* dcmt_create_generators(PyObject *self, PyObject *args, PyObject
 			&w, &p, &start_id, &max_id, &seed_obj))
 		return NULL;
 
+	// test parameter validity
+
+	if(!test_wordlen_validity(w)) return NULL;
+	if(!test_exponent_validity(p)) return NULL;
+	if(!test_id_validity(w, p, start_id, max_id)) return NULL;
+
 	uint32_t seed;
 	if(!parse_seed(seed_obj, &seed))
 		return NULL;
+
+	// get MT structures
 
 	int count = -1;
 	mt_struct **mts = get_mt_parameters_st(w, p, start_id, max_id, seed, &count);
