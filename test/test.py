@@ -69,11 +69,40 @@ class TestErrors(unittest.TestCase):
 			self.assertRaises(DcmtError, init_generator, mts[0], seed=seed)
 
 
+class TestBasics(unittest.TestCase):
+
+	def testDifferentIds(self):
+		mts = create_generators(start_id=0, max_id=1, seed=10)
+		init_generator(mts[0], seed=2)
+		init_generator(mts[1], seed=3)
+
+		randoms0 = [get_random(mts[0]) for i in xrange(10)]
+		randoms1 = [get_random(mts[1]) for i in xrange(10)]
+
+		for r0, r1 in zip(randoms0, randoms1):
+			self.assertNotEqual(r0, r1)
+
+	def testDeterminism(self):
+		gen_id = 10
+		gen_seed = 100
+		init_seed = 300
+
+		random_sets = []
+		for i in xrange(2):
+			mts = create_generators(start_id=gen_id, max_id=gen_id, seed=gen_seed)
+			init_generator(mts[0], seed=init_seed)
+			randoms = [get_random(mts[0]) for i in xrange(10)]
+			random_sets.append(randoms)
+
+		for r0, r1 in zip(random_sets[0], random_sets[1]):
+			self.assertEqual(r0, r1)
+
+
 if __name__ == '__main__':
 
 	suites = []
 
-	for cls in (TestErrors,):
+	for cls in (TestErrors, TestBasics):
 		suites.append(unittest.TestLoader().loadTestsFromTestCase(cls))
 
 	all_tests = unittest.TestSuite(suites)
