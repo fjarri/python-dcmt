@@ -388,6 +388,32 @@ static PyObject* dcmt_get_random(PyObject *self, PyObject *args)
 	return Py_BuildValue("I", num);
 }
 
+static PyObject* dcmt_c_get_randoms(PyObject *self, PyObject *args)
+{
+	PyObject *mt_obj = NULL;
+	PyArrayObject *arr = NULL;
+
+	if(!PyArg_UnpackTuple(args, "c_get_randoms", 2, 2, &mt_obj, &arr))
+		return NULL;
+
+	size_t size = 1;
+	for(int i = 0; i < arr->nd; i++)
+		size *= arr->dimensions[i];
+
+	mt_struct *mt_ptr = NULL;
+	if(!parse_addressof(mt_obj, (void **)&mt_ptr))
+		return NULL;
+
+	// temporarily substitute offset with real pointer which dcmt expects
+	size_t offset = (size_t)mt_ptr->state;
+	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
+	for(int i = 0; i < size; i++)
+		((uint32_t*)(arr->data))[i] = genrand_mt(mt_ptr);
+	mt_ptr->state = (uint32_t*)offset;
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef dcmt_methods[] = {
 	{"create_generators", dcmt_create_generators, METH_VARARGS | METH_KEYWORDS,
 		"Get structure(s) with MT parameters"},
@@ -395,6 +421,7 @@ static PyMethodDef dcmt_methods[] = {
 		"Initialize MT generator with seed"},
 	{"get_random", dcmt_get_random, METH_VARARGS,
 		"Get random value from a generator"},
+	{"c_get_randoms", dcmt_c_get_randoms, METH_VARARGS, "Get array of randoms"},
 	{NULL, NULL}
 };
 
