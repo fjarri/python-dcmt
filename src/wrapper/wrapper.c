@@ -2,6 +2,7 @@
 #include <dc.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <numpy/arrayobject.h>
 
 PyMODINIT_FUNC init_libdcmt(void);
 
@@ -403,6 +404,9 @@ PyMODINIT_FUNC init_libdcmt(void)
 		"Dynamic creation of Mersenne twister RNGs.");
 	if(NULL == self)
 		return;
+
+	// this is a macro, containing error checks inside
+	import_array();
 
 	// import structure building functions from .structures module
 
