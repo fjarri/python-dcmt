@@ -1,7 +1,7 @@
 import unittest
 import numpy
 import gc
-from dcmt import create_mts, init_mt, rand, DcmtParameterError
+from dcmt import create_mts, create_mts_stripped, init_mt, rand, DcmtParameterError
 
 class TestErrors(unittest.TestCase):
 
@@ -110,11 +110,34 @@ class TestBasics(unittest.TestCase):
 			self.assert_((r >= 0).all() and (r <= 2**wordlen - 1).all())
 
 
+class TestStripped(unittest.TestCase):
+
+	def testValidity(self):
+		"""
+		Check that common parameters are really common,
+		and unique parameters are filled properly
+		"""
+
+		params = dict(start_id=0, max_id=2, seed=123)
+		mts1 = create_mts(**params)
+		mts2_common, mts2_stripped = create_mts_stripped(**params)
+
+		for mt1, mt2 in zip(mts1, mts2_stripped):
+
+			# check common parameters
+			for field in (x[0] for x in mts2_common._fields_):
+				self.assertEqual(getattr(mt1, field), getattr(mts2_common, field))
+
+			# check unique parameters
+			for field in (x[0] for x in mt2._fields_):
+				self.assertEqual(getattr(mt1, field), getattr(mt2, field))
+
+
 if __name__ == '__main__':
 
 	suites = []
 
-	for cls in (TestErrors, TestBasics):
+	for cls in (TestErrors, TestBasics, TestStripped):
 		suites.append(unittest.TestLoader().loadTestsFromTestCase(cls))
 
 	all_tests = unittest.TestSuite(suites)
