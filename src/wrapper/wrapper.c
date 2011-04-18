@@ -135,7 +135,6 @@ static PyObject* dcmt_fill_mt_structs(PyObject *self, PyObject *args)
 		elem->state = (uint32_t*)(size_t)vec_offset;
 	}
 
-	free_mt_struct_array(ptr, count);
 
 	Py_RETURN_NONE;
 }

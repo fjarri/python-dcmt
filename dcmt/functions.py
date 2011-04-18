@@ -78,12 +78,9 @@ def create_mts(**kwds):
 	# being extra-paranoidal
 	try:
 		mts = (mt_struct * count)()
-	except:
+		fill_mt_structs(addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset, ptr, count)
+	finally:
 		free_mt_structs(ptr, count)
-		raise
-
-	# frees original structures inside
-	fill_mt_structs(addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset, ptr, count)
 
 	return mts
 
