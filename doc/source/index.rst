@@ -19,37 +19,37 @@ Quick Start
 
 We will start from importing the module:
 
- >>> from dcmt import create_generators, init_generator, get_random
+ >>> from dcmt import create_mts, init_mt, rand
 
 Creating three independent RNGs with default parameters:
 
- >>> mtss = create_generators(start_id=0, max_id=2, seed=777)
+ >>> mts = create_mts(start_id=0, max_id=2, seed=777)
 
 If ``seed`` is not specified, the value of ``time(NULL)`` is taken.
 Now we must initialize each generator:
 
- >>> init_generator(mtss[0], seed=1)
- >>> init_generator(mtss[1], seed=2)
- >>> init_generator(mtss[2], seed=3)
+ >>> init_mt(mts[0], seed=1)
+ >>> init_mt(mts[1], seed=2)
+ >>> init_mt(mts[2], seed=3)
 
 Here seeds can be omitted too, in which case ``time(NULL)`` is used.
 These seeds are independent of the one that was used to create generators.
 After initialisation every generator is ready to produce random numbers:
 
- >>> get_random(mtss[0])
- 1906178639
- >>> get_random(mtss[1])
- 2586093748
- >>> get_random(mtss[2])
- 992714192
- >>> get_random(mtss[0])
- 1943589963
- >>> get_random(mtss[1])
- 199032518
- >>> get_random(mtss[2])
- 1771411355
+ >>> rand(mts[0], (4,))
+ array([1906178639, 1943589963, 1600596477,  592883390], dtype=uint32)
+ >>> rand(mts[1], (4,))
+ array([2586093748,  199032518, 4119501648, 3446361745], dtype=uint32)
+ >>> rand(mts[2], (4,))
+ array([ 992714192, 1771411355, 1256520595,   93513968], dtype=uint32)
+ >>> rand(mts[0], (4,))
+ array([3727792825,   15188662,  882751098, 1784690177], dtype=uint32)
+ >>> rand(mts[1], (4,))
+ array([3218870609,  450586145, 2537490204,  189269991], dtype=uint32)
+ >>> rand(mts[2], (4,))
+ array([2266385156, 2486337585, 1586629291, 2718290559], dtype=uint32)
 
-Every element of ``mts`` sequence can be copied or saved,
+Every element of ``mts`` sequence can be copied or saved freely,
 in order to keep the state of this RNG.
 
 For further information about generator properties and various pitfalls
@@ -69,10 +69,15 @@ Reference
 
 .. exception:: DcmtError
 
-   This exception is thrown for any error of DCMT algorithm (invalid parameters,
-   failure to create generator etc.).
+   This exception is thrown for an internal error of DCMT algorithm
+   (usually some failure to create a generator).
 
-.. function:: create_generators(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None)
+.. exception:: DcmtParameterError
+
+   This exception is thrown if parameters specified for creation/initialization
+   of MT generators are incorrect.
+
+.. function:: create_mts(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None)
 
    Creates sequence of generator objects, which are used to produce random numbers.
 
@@ -98,24 +103,27 @@ Reference
 
    .. warning:: There is a known bug in the algorithm, when it fails to create RNG
                 for ``wordlen=31``, ``exponent=521`` and ``ID=9``.
-                The function will throw :py:exc:`~DcmtError` if this ID
+                The function will throw :py:exc:`~DcmtParameterError` if this ID
                 belongs to the range of given IDs.
 
-.. function:: init_generator(mts, seed=None)
+.. function:: init_mt(mt, seed=None)
 
    Initializes generator state with given seed.
 
-   :param mts: one of generator objects, created with :py:func:`~create_generators`.
+   :param mt: one of generator objects, created with :py:func:`~create_generators`.
 
    :param seed: seed for randomizing generator state. If not set, current time is used.
           The function is guaranteed to create the same RNG state if given the same seed.
 
-.. function:: get_random(mts)
+.. function:: rand(mt, shape)
 
-   Produces integer random number with the range specified by ``wordlen`` parameter
-   during RNG creation with :py:func:`~create_generators`.
+   Produces ``numpy`` array filled with random numbers; range depends on ``wordlen``
+   parameter specified during RNG creation with :py:func:`~create_mts`.
 
-   :param mts: one of generator objects, created with :py:func:`~create_generators`
-          and initialized with :py:func:`~init_generator` at least once.
+   :param mt: one of generator objects, created with :py:func:`~create_mts`
+          and initialized with :py:func:`~init_mt` at least once.
 
-   :returns: integer random number in range [0, 2^wordlen-1]
+   :param shape: shape of resulting array.
+
+   :returns: ``numpy`` array of type ``numpy.uint32`` with shape ``shape``
+             filled with random numbers in range [0, 2^wordlen-1]
