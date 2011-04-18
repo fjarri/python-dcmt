@@ -3,8 +3,33 @@ from time import time
 from ctypes import Structure, POINTER, c_int, c_uint32, addressof, sizeof
 
 from _libdcmt import create_mt_structs, fill_mt_structs, \
-	init_mt_struct, fill_rand_int, free_mt_structs
+	fill_mt_structs_stripped, init_mt_struct, fill_rand_int, free_mt_structs
 from .exceptions import DcmtParameterError
+
+
+# matches structure definitions in C extension
+class mt_common(Structure):
+	_fields_ = [
+		("mm", c_int),
+		("nn", c_int),
+		("rr", c_int),
+		("ww", c_int),
+		("wmask", c_uint32),
+		("umask", c_uint32),
+		("lmask", c_uint32),
+		("shift0", c_int),
+		("shift1", c_int),
+		("shiftB", c_int),
+		("shiftC", c_int)
+	]
+
+# matches structure definitions in C extension
+class mt_unique(Structure):
+	_fields_ = [
+		("aaa", c_uint32),
+		("maskB", c_uint32),
+		("maskC", c_uint32)
+	]
 
 
 def validate_seed(seed):
@@ -92,3 +117,18 @@ def rand(mt, shape):
 	randoms = numpy.empty(shape, dtype=numpy.uint32)
 	fill_rand_int(addressof(mt), randoms)
 	return randoms
+
+def create_mts_stripped(**kwds):
+
+	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
+	ptr, count = create_mt_structs(wordlen, exponent, start_id, max_id, seed)
+
+	# being extra-paranoidal
+	try:
+		mts_common = mt_common()
+		mts_unique = (mt_unique * count)()
+		fill_mt_structs_stripped(addressof(mts_common), addressof(mts_unique), ptr, count)
+	finally:
+		free_mt_structs(ptr, count)
+
+	return mts_common, mts_unique

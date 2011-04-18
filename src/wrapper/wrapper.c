@@ -4,6 +4,18 @@
 #include <stddef.h>
 #include <numpy/arrayobject.h>
 
+// matches structure definition in dcmt.functions
+typedef struct {
+	int mm, nn, rr, ww;
+	uint32_t wmask, umask, lmask;
+	int shift0, shift1, shiftB, shiftC;
+} mt_common;
+
+// matches structure definition in dcmt.functions
+typedef struct {
+	uint32_t aaa, maskB, maskC;
+} mt_stripped;
+
 PyMODINIT_FUNC init_libdcmt(void);
 
 static PyObject* class_DcmtError = NULL; // dcmt.exceptions.DcmtError
@@ -72,7 +84,7 @@ static PyObject* dcmt_create_mt_structs(PyObject *self, PyObject *args)
 
 	int count = -1;
 	mt_struct **mts = get_mt_parameters_st(w, p, start_id, max_id, seed, &count);
-	if(NULL == mts)
+	if(NULL == mts || 0 == count)
 	{
 		PyErr_SetString(class_DcmtError, "Internal dcmt error occurred");
 		return NULL;
@@ -135,6 +147,54 @@ static PyObject* dcmt_fill_mt_structs(PyObject *self, PyObject *args)
 		elem->state = (uint32_t*)(size_t)vec_offset;
 	}
 
+	Py_RETURN_NONE;
+}
+
+static PyObject* dcmt_fill_mt_structs_stripped(PyObject *self, PyObject *args)
+{
+	PyObject *mts_common_address_obj = NULL;
+	PyObject *mts_stripped_address_obj = NULL;
+	PyObject *ptr_obj = NULL;
+	int count = 0;
+
+	if(!PyArg_ParseTuple(args, "OOOi:fill_mt_structs",
+			&mts_common_address_obj, &mts_stripped_address_obj, &ptr_obj, &count))
+		return NULL;
+
+	mt_struct **ptr = (mt_struct **)PyLong_AsVoidPtr(ptr_obj);
+	if(NULL == ptr)
+		return NULL;
+
+	mt_common *mts_common_ptr = NULL;
+	if(!parse_pointer(mts_common_address_obj, (void **)&mts_common_ptr))
+		return NULL;
+
+	mt_stripped *mts_stripped_ptr = NULL;
+	if(!parse_pointer(mts_stripped_address_obj, (void **)&mts_stripped_ptr))
+		return NULL;
+
+	// fill common parameters
+	mts_common_ptr->mm = ptr[0]->mm;
+	mts_common_ptr->nn = ptr[0]->nn;
+	mts_common_ptr->rr = ptr[0]->rr;
+	mts_common_ptr->ww = ptr[0]->ww;
+	mts_common_ptr->umask = ptr[0]->umask;
+	mts_common_ptr->wmask = ptr[0]->wmask;
+	mts_common_ptr->lmask = ptr[0]->lmask;
+	mts_common_ptr->shift0 = ptr[0]->shift0;
+	mts_common_ptr->shift1 = ptr[0]->shift1;
+	mts_common_ptr->shiftB = ptr[0]->shiftB;
+	mts_common_ptr->shiftC = ptr[0]->shiftC;
+
+	// fill unique parameters
+	for(int i = 0; i < count; i++)
+	{
+		// discarding state vector part of mt_struct, as well as
+		// mt_struct.i field, since they are filled only on initialization
+		mts_stripped_ptr[i].aaa = ptr[i]->aaa;
+		mts_stripped_ptr[i].maskB = ptr[i]->maskB;
+		mts_stripped_ptr[i].maskC = ptr[i]->maskC;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -198,6 +258,7 @@ static PyMethodDef dcmt_methods[] = {
 	{"create_mt_structs", dcmt_create_mt_structs, METH_VARARGS, "test"},
 	{"fill_mt_structs", dcmt_fill_mt_structs, METH_VARARGS, "test"},
 	{"free_mt_structs", dcmt_free_mt_structs, METH_VARARGS, "test"},
+	{"fill_mt_structs_stripped", dcmt_fill_mt_structs_stripped, METH_VARARGS, "test"},
 	{"init_mt_struct", dcmt_init_mt_struct, METH_VARARGS, "test"},
 	{"fill_rand_int", dcmt_fill_rand_int, METH_VARARGS, "test"},
 	{NULL, NULL}
