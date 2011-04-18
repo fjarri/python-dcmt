@@ -157,6 +157,8 @@ static PyObject* dcmt_init_mt_struct(PyObject *self, PyObject *args)
 		return NULL;
 
 	// temporarily substitute offset with real pointer which dcmt expects
+	// FIXME: remove this trick by fixing dcmt or by using list instead of
+	// ctypes array in Python part (so that I can set copy constructor etc)
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	sgenrand_mt_modified(seed, mt_ptr);
@@ -182,6 +184,8 @@ static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
 		return NULL;
 
 	// temporarily substitute offset with real pointer which dcmt expects
+	// FIXME: remove this trick by fixing dcmt or by using list instead of
+	// ctypes array in Python part (so that I can set copy constructor etc)
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	for(int i = 0; i < size; i++)
