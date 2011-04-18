@@ -1,4 +1,3 @@
 from .version import VERSION
-from .exceptions import DcmtError
-from ._libdcmt import create_generators, init_generator, get_random
-from functions import get_randoms
+from .exceptions import DcmtError, DcmtParameterError
+from .functions import create_mts, create_stripped_mts, init_mt, rand
