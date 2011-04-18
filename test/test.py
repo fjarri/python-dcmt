@@ -1,6 +1,7 @@
 import unittest
-from dcmt import create_generators, init_generator, get_random, DcmtError
+import numpy
 import gc
+from dcmt import create_mts, init_mt, rand, DcmtParameterError
 
 class TestErrors(unittest.TestCase):
 
@@ -8,11 +9,11 @@ class TestErrors(unittest.TestCase):
 
 		# correct
 		for wordlen in (31, 32):
-			create_generators(wordlen=wordlen, seed=1)
+			create_mts(wordlen=wordlen, seed=1)
 
 		# incorrect
 		for wordlen in (16, 64):
-			self.assertRaises(DcmtError, create_generators, wordlen=wordlen, seed=1)
+			self.assertRaises(DcmtParameterError, create_mts, wordlen=wordlen, seed=1)
 
 	def testExponent(self):
 
@@ -25,60 +26,61 @@ class TestErrors(unittest.TestCase):
 
 		# correct
 		for exponent in correct_exponents_reduced:
-			create_generators(exponent=exponent, seed=1)
+			create_mts(exponent=exponent, seed=1)
 
 		# incorrect
 		for exponent in (500, 1000, 50000):
-			self.assertRaises(DcmtError, create_generators, exponent=exponent, seed=1)
+			self.assertRaises(DcmtParameterError, create_mts, exponent=exponent, seed=1)
 
 	def testId(self):
 
 		# error: start_id < max_id
-		self.assertRaises(DcmtError, create_generators, start_id=1, max_id=0, seed=1)
+		self.assertRaises(DcmtParameterError, create_mts, start_id=1, max_id=0, seed=1)
 
 		# error: start_id < 0
-		self.assertRaises(DcmtError, create_generators, start_id=-1, max_id=2, seed=1)
+		self.assertRaises(DcmtParameterError, create_mts, start_id=-1, max_id=2, seed=1)
 
 		# error: start_id > 65536
-		self.assertRaises(DcmtError, create_generators, start_id=65537, max_id=65538, seed=1)
+		self.assertRaises(DcmtParameterError, create_mts, start_id=65537, max_id=65538, seed=1)
 
 		# error: max_id > 65536
-		self.assertRaises(DcmtError, create_generators, start_id=65534, max_id=65538, seed=1)
+		self.assertRaises(DcmtParameterError, create_mts, start_id=65534, max_id=65538, seed=1)
 
 	def testBugId9(self):
 
 		# known bug: cannot find generator for wordlen=31, exponent=521 and id=9
-		self.assertRaises(DcmtError, create_generators, wordlen=31, exponent=521,
+		self.assertRaises(DcmtParameterError, create_mts, wordlen=31, exponent=521,
 			start_id=7, max_id=10, seed=1)
 
 	def testSeed(self):
 
 		# since keywords are processed in extension, test that even not mentioning
 		# keyword parameter works
-		create_generators()
+		create_mts()
 
 		# correct seeds
 		for seed in (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1)):
-			mts = create_generators(seed=seed)
-			init_generator(mts[0], seed=seed)
+			mts = create_mts(seed=seed)
+			init_mt(mts[0], seed=seed)
 
 		# incorrect seeds
 		for seed in (-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32)):
-			self.assertRaises(DcmtError, create_generators, seed=seed)
+			self.assertRaises(DcmtParameterError, create_mts, seed=seed)
 
-			mts = create_generators()
-			self.assertRaises(DcmtError, init_generator, mts[0], seed=seed)
+			mts = create_mts()
+			self.assertRaises(DcmtParameterError, init_mt, mts[0], seed=seed)
 
 
 class TestBasics(unittest.TestCase):
 
 	def testDifferentIds(self):
-		mts = create_generators(start_id=0, max_id=1, seed=10)
-		init_generator(mts[0], seed=2)
-		init_generator(mts[1], seed=3)
+		mts = create_mts(start_id=0, max_id=1, seed=10)
+		init_mt(mts[0], seed=2)
+		init_mt(mts[1], seed=3)
 
-		randoms0 = [get_random(mts[0]) for i in xrange(10)]
-		randoms1 = [get_random(mts[1]) for i in xrange(10)]
+		shape = (10,)
+		randoms0 = rand(mts[0], shape)
+		randoms1 = rand(mts[1], shape)
 
 		for r0, r1 in zip(randoms0, randoms1):
 			self.assertNotEqual(r0, r1)
@@ -90,9 +92,9 @@ class TestBasics(unittest.TestCase):
 
 		random_sets = []
 		for i in xrange(2):
-			mts = create_generators(start_id=gen_id, max_id=gen_id, seed=gen_seed)
-			init_generator(mts[0], seed=init_seed)
-			randoms = [get_random(mts[0]) for i in xrange(10)]
+			mts = create_mts(start_id=gen_id, max_id=gen_id, seed=gen_seed)
+			init_mt(mts[0], seed=init_seed)
+			randoms = rand(mts[0], (10,))
 			random_sets.append(randoms)
 
 		for r0, r1 in zip(random_sets[0], random_sets[1]):
@@ -101,12 +103,11 @@ class TestBasics(unittest.TestCase):
 	def testRange(self):
 
 		for wordlen in (31, 32):
-			mts = create_generators(wordlen=wordlen, seed=99)
-			init_generator(mts[0])
+			mts = create_mts(wordlen=wordlen, seed=99)
+			init_mt(mts[0])
 
-			for i in xrange(64):
-				r = get_random(mts[0])
-				self.assert_(r >= 0 and r < 2**wordlen)
+			r = rand(mts[0], (64,))
+			self.assert_((r >= 0).all() and (r <= 2**wordlen - 1).all())
 
 
 if __name__ == '__main__':
