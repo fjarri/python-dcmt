@@ -1,5 +1,6 @@
 import unittest
 from dcmt import create_generators, init_generator, get_random, DcmtError
+import gc
 
 class TestErrors(unittest.TestCase):
 
@@ -117,3 +118,5 @@ if __name__ == '__main__':
 
 	all_tests = unittest.TestSuite(suites)
 	unittest.TextTestRunner(verbosity=1).run(all_tests)
+
+	gc.collect() # additional test for different pointer- and reference- related bugs
