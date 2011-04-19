@@ -33,6 +33,8 @@ class mt_unique(Structure):
 
 
 def validate_seed(seed):
+	"""Return valid seed or raise an exception"""
+
 	if seed is None:
 		return int(time()) % (2 ** 32)
 	elif seed < 0 or seed > 2 ** 32 - 1:
@@ -41,6 +43,7 @@ def validate_seed(seed):
 	return seed
 
 def validate_parameters(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None):
+	"""Return valid parameter or raise an exception"""
 
 	if start_id > max_id:
 		raise DcmtParameterError("Starting ID must be equal to or lower than maximum ID")
@@ -61,6 +64,7 @@ def validate_parameters(wordlen=32, exponent=521, start_id=0, max_id=0, seed=Non
 	return wordlen, exponent, start_id, max_id, validate_seed(seed)
 
 def create_mts(**kwds):
+	"""Create array of ctypes Structures with RNG parameters"""
 
 	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
 
@@ -110,16 +114,18 @@ def create_mts(**kwds):
 	return mts
 
 def init_mt(mt, seed=None):
+	"""Initialize RNG structure with given seed"""
 	seed = validate_seed(seed)
 	init_mt_struct(addressof(mt), seed)
 
 def rand(mt, shape):
+	"""Return numpy array with random numbers"""
 	randoms = numpy.empty(shape, dtype=numpy.uint32)
 	fill_rand_int(addressof(mt), randoms)
 	return randoms
 
 def create_mts_stripped(**kwds):
-
+	"""Return optimized RNG structures"""
 	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
 	ptr, count = create_mt_structs(wordlen, exponent, start_id, max_id, seed)
 
