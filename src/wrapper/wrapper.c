@@ -68,6 +68,7 @@ static int parse_pointer(PyObject *obj, void **ptr)
 	return true;
 }
 
+// Exported function: create MT generator structures
 static PyObject* dcmt_create_mt_structs(PyObject *self, PyObject *args)
 {
 	int w, p, start_id, max_id;
@@ -96,6 +97,7 @@ static PyObject* dcmt_create_mt_structs(PyObject *self, PyObject *args)
 	return res;
 }
 
+// Exported function: free original MT generator structures
 static PyObject* dcmt_free_mt_structs(PyObject *self, PyObject *args)
 {
 	PyObject *ptr_obj = NULL;
@@ -113,6 +115,7 @@ static PyObject* dcmt_free_mt_structs(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+// Exported function: fill Python MT generator structures
 static PyObject* dcmt_fill_mt_structs(PyObject *self, PyObject *args)
 {
 	PyObject *mts_address_obj = NULL;
@@ -150,6 +153,8 @@ static PyObject* dcmt_fill_mt_structs(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+// Exported function: fill stripped MT structures
+// (one for common parameters, and small structures with unique parameters for each RNG)
 static PyObject* dcmt_fill_mt_structs_stripped(PyObject *self, PyObject *args)
 {
 	PyObject *mts_common_address_obj = NULL;
@@ -199,6 +204,7 @@ static PyObject* dcmt_fill_mt_structs_stripped(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+// Exported function: initialize MT generator with a seed
 static PyObject* dcmt_init_mt_struct(PyObject *self, PyObject *args)
 {
 	PyObject *mt_address_obj = NULL;
@@ -226,6 +232,7 @@ static PyObject* dcmt_init_mt_struct(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+// Exported function: fill numpy array with random numbers
 static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
 {
 	PyObject *mt_address_obj = NULL;
@@ -255,12 +262,18 @@ static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef dcmt_methods[] = {
-	{"create_mt_structs", dcmt_create_mt_structs, METH_VARARGS, "test"},
-	{"fill_mt_structs", dcmt_fill_mt_structs, METH_VARARGS, "test"},
-	{"free_mt_structs", dcmt_free_mt_structs, METH_VARARGS, "test"},
-	{"fill_mt_structs_stripped", dcmt_fill_mt_structs_stripped, METH_VARARGS, "test"},
-	{"init_mt_struct", dcmt_init_mt_struct, METH_VARARGS, "test"},
-	{"fill_rand_int", dcmt_fill_rand_int, METH_VARARGS, "test"},
+	{"create_mt_structs", dcmt_create_mt_structs, METH_VARARGS,
+		"Create C structures with MT RNGs"},
+	{"fill_mt_structs", dcmt_fill_mt_structs, METH_VARARGS,
+		"Fill Python structures with MT RNGs"},
+	{"free_mt_structs", dcmt_free_mt_structs, METH_VARARGS,
+		"Free C structures with MT RNGs"},
+	{"fill_mt_structs_stripped", dcmt_fill_mt_structs_stripped, METH_VARARGS,
+		"Fill stripped Python structures with MT RNGs"},
+	{"init_mt_struct", dcmt_init_mt_struct, METH_VARARGS,
+		"Initialize Python MT RNG structures with a seed"},
+	{"fill_rand_int", dcmt_fill_rand_int, METH_VARARGS,
+		"Fill numpy array with random numbers"},
 	{NULL, NULL}
 };
 
