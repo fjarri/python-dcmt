@@ -101,6 +101,11 @@ Reference
              up to the crash of the whole script).
              These objects can be copied, saved and reused freely.
 
+   .. note:: If function fails to create RNG for one of the IDs, it stops and
+             returns already created RNGs.
+             If it failed to create the first RNG in sequence,
+             :py:exc:`~DcmtError` is raised.
+
    .. warning:: There is a known bug in the algorithm, when it fails to create RNG
                 for ``wordlen=31``, ``exponent=521`` and ``ID=9``.
                 The function will throw :py:exc:`~DcmtParameterError` if this ID
