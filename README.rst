@@ -12,6 +12,14 @@ Changelog
 =========
 
 ~~~~~~~
+0.6.1-2
+~~~~~~~
+
+* Shortened function names: create_mts(), init_mt()
+* Removed get_random() and added rand(), which returns numpy array
+* Added create_mts_stripped(), currently as a 'half-documented' feature
+
+~~~~~~~
 0.6.1-1
 ~~~~~~~
 
