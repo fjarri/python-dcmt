@@ -111,6 +111,18 @@ Reference
                 The function will throw :py:exc:`~DcmtParameterError` if this ID
                 belongs to the range of given IDs.
 
+.. function:: create_mts_stripped(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None)
+
+   Takes the same parameters as :py:func:`~create_mts`, but returns optimized structures
+   with no repeating elements.
+
+   :returns: tuple with two elements: ``ctypes`` structure with repeating RNG parameters
+             and array of ``ctypes`` structures with parameters unique for each RNG.
+
+   .. note:: This function has the same behavior as :py:func:`~create_mts` (see note).
+
+   .. warning:: If you are using these structures, make sure you know what you are doing.
+
 .. function:: init_mt(mt, seed=None)
 
    Initializes generator state with given seed.
