@@ -1,0 +1,15 @@
+include *.rst
+include *.py
+include *.cfg
+include test/*.py
+include doc/source/*.rst
+include doc/source/*.py
+include src/dcmt/include/dc.h
+include src/dcmt/lib/dci.h
+include src/dcmt/lib/mt19937.h
+include src/dcmt/lib/Makefile
+include src/dcmt/README
+include src/dcmt/README.jp
+include src/dcmt/CHANGELOG
+include src/dcmt/VERSION
+
