@@ -15,6 +15,7 @@ typedef struct {
 // matches structure definition in dcmt.functions
 typedef struct {
 	uint32_t aaa, maskB, maskC;
+	int i;
 } mt_stripped;
 
 PyMODINIT_FUNC init_libdcmt(void);

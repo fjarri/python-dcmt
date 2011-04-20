@@ -25,11 +25,12 @@ class mt_common(Structure):
 	]
 
 # matches structure definitions in C extension
-class mt_unique(Structure):
+class mt_stripped(Structure):
 	_fields_ = [
 		("aaa", c_uint32),
 		("maskB", c_uint32),
-		("maskC", c_uint32)
+		("maskC", c_uint32),
+		("i", c_int)
 	]
 
 
@@ -135,10 +136,10 @@ def create_mts_stripped(**kwds):
 	# being extra-paranoidal
 	try:
 		mts_common = mt_common()
-		mts_unique = (mt_unique * count)()
-		fill_mt_structs_stripped(addressof(mts_common), addressof(mts_unique), ptr, count)
+		mts_stripped = (mt_stripped * count)()
+		fill_mt_structs_stripped(addressof(mts_common), addressof(mts_stripped), ptr, count)
 	finally:
 		free_mt_structs(ptr, count)
 
 	mts_common.state_len = get_state_len(wordlen, exponent)
-	return mts_common, mts_unique
+	return mts_common, mts_stripped
