@@ -9,6 +9,7 @@ typedef struct {
 	int mm, nn, rr, ww;
 	uint32_t wmask, umask, lmask;
 	int shift0, shift1, shiftB, shiftC;
+	int state_len;
 } mt_common;
 
 // matches structure definition in dcmt.functions

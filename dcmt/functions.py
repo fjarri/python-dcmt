@@ -20,7 +20,8 @@ class mt_common(Structure):
 		("shift0", c_int),
 		("shift1", c_int),
 		("shiftB", c_int),
-		("shiftC", c_int)
+		("shiftC", c_int),
+		("state_len", c_int)
 	]
 
 # matches structure definitions in C extension
@@ -139,4 +140,5 @@ def create_mts_stripped(**kwds):
 	finally:
 		free_mt_structs(ptr, count)
 
+	mts_common.state_len = get_state_len(wordlen, exponent)
 	return mts_common, mts_unique
