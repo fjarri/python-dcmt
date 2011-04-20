@@ -134,7 +134,8 @@ class TestStripped(unittest.TestCase):
 
 			# check unique parameters
 			for field in (x[0] for x in mt2._fields_):
-				self.assertEqual(getattr(mt1, field), getattr(mt2, field))
+				if field != 'i':
+					self.assertEqual(getattr(mt1, field), getattr(mt2, field))
 
 
 if __name__ == '__main__':
