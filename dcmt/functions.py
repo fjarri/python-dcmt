@@ -63,14 +63,16 @@ def validate_parameters(wordlen=32, exponent=521, start_id=0, max_id=0, seed=Non
 
 	return wordlen, exponent, start_id, max_id, validate_seed(seed)
 
+def get_state_len(wordlen, exponent):
+	# This formula is not exported in dcmt API,
+	# so I had to take it from seive.c::init_mt_search()
+	return exponent / wordlen + 1
+
 def create_mts(**kwds):
 	"""Create array of ctypes Structures with RNG parameters"""
 
 	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
-
-	# This formula is not exported in dcmt API,
-	# so I had to take it from seive.c::init_mt_search()
-	state_len = exponent / wordlen + 1
+	state_len = get_state_len(wordlen, exponent)
 
 	# Original library allocates two separate pieces of memory on a heap,
 	# because the size of mt_struct depends on state vector size.
