@@ -64,51 +64,45 @@ def validate_parameters(wordlen=32, exponent=521, start_id=0, max_id=0, seed=Non
 
 	return wordlen, exponent, start_id, max_id, validate_seed(seed)
 
-def get_state_len(wordlen, exponent):
-	# This formula is not exported in dcmt API,
-	# so I had to take it from seive.c::init_mt_search()
-	return exponent / wordlen + 1
-
 def create_mts(**kwds):
 	"""Create array of ctypes Structures with RNG parameters"""
 
 	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
-	state_len = get_state_len(wordlen, exponent)
 
-	# Original library allocates two separate pieces of memory on a heap,
-	# because the size of mt_struct depends on state vector size.
-	# Since I will not use dcmt functions to delete mt_struct instances,
-	# it is more convenient to keep everything in one struct,
-	# using dynamic features of Python to build necessary class.
-	class mt_struct(Structure):
-		_fields_ = [
-			("aaa", c_uint32),
-			("mm", c_int),
-			("nn", c_int),
-			("rr", c_int),
-			("ww", c_int),
-			("wmask", c_uint32),
-			("umask", c_uint32),
-			("lmask", c_uint32),
-			("shift0", c_int),
-			("shift1", c_int),
-			("shiftB", c_int),
-			("shiftC", c_int),
-			("maskB", c_uint32),
-			("maskC", c_uint32),
-
-			# filled on generator initialization
-			("i", c_int),
-			("state", POINTER(c_uint32)),
-
-			# not present in original mt_struct
-			("state_vec", c_uint32 * state_len)
-		]
-
-	ptr, count = create_mt_structs(wordlen, exponent, start_id, max_id, seed)
+	ptr, count, state_len = create_mt_structs(wordlen, exponent, start_id, max_id, seed)
 
 	# being extra-paranoidal
 	try:
+		# Original library allocates two separate pieces of memory on a heap,
+		# because the size of mt_struct depends on state vector size.
+		# Since I will not use dcmt functions to delete mt_struct instances,
+		# it is more convenient to keep everything in one struct,
+		# using dynamic features of Python to build necessary class.
+		class mt_struct(Structure):
+			_fields_ = [
+				("aaa", c_uint32),
+				("mm", c_int),
+				("nn", c_int),
+				("rr", c_int),
+				("ww", c_int),
+				("wmask", c_uint32),
+				("umask", c_uint32),
+				("lmask", c_uint32),
+				("shift0", c_int),
+				("shift1", c_int),
+				("shiftB", c_int),
+				("shiftC", c_int),
+				("maskB", c_uint32),
+				("maskC", c_uint32),
+
+				# filled on generator initialization
+				("i", c_int),
+				("state", POINTER(c_uint32)),
+
+				# not present in original mt_struct
+				("state_vec", c_uint32 * state_len)
+			]
+
 		mts = (mt_struct * count)()
 		fill_mt_structs(addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset, ptr, count)
 	finally:
@@ -130,7 +124,7 @@ def rand(mt, shape):
 def create_mts_stripped(**kwds):
 	"""Return optimized RNG structures"""
 	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
-	ptr, count = create_mt_structs(wordlen, exponent, start_id, max_id, seed)
+	ptr, count, _ = create_mt_structs(wordlen, exponent, start_id, max_id, seed)
 
 	# being extra-paranoidal
 	try:

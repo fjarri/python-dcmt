@@ -140,7 +140,7 @@ static PyObject* dcmt_create_mt_structs(PyObject *self, PyObject *args)
 	}
 
 	PyObject *ptr = PyLong_FromVoidPtr((void *)mts);
-	PyObject *res = Py_BuildValue("Oi", ptr, count);
+	PyObject *res = Py_BuildValue("Oii", ptr, count, mts[0]->nn);
 	Py_DECREF(ptr);
 	return res;
 }
