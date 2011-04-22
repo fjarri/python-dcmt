@@ -126,11 +126,7 @@ class TestStripped(unittest.TestCase):
 
 			# check common parameters
 			for field in (x[0] for x in mts2_common._fields_):
-				if field == 'state_len':
-				# original mt_struct does not need it, because it contains the whole state inside
-					self.assertEqual(len(mt1.state_vec), getattr(mts2_common, field))
-				else:
-					self.assertEqual(getattr(mt1, field), getattr(mts2_common, field))
+				self.assertEqual(getattr(mt1, field), getattr(mts2_common, field))
 
 			# check unique parameters
 			for field in (x[0] for x in mt2._fields_):
