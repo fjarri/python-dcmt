@@ -12,6 +12,13 @@ Module documentation can be found `here <http://packages.python.org/python-dcmt>
 Changelog
 =========
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+0.6.1-3 (in development)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Using slightly optimized random number generation taken from ``numpy`` 1.5.1;
+* (TODO) Implement base class for numpy.random.Random (to get various random distributions)
+
 ~~~~~~~
 0.6.1-2
 ~~~~~~~
