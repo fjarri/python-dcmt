@@ -31,17 +31,17 @@ static PyObject* class_DcmtError = NULL; // dcmt.exceptions.DcmtError
 //      of separate loop, which could produce machine-dependent results(wrong).
 // 2) Slightly reformatted sources to be included into CUDA SDK.
 static void sgenrand_mt_modified(uint32_t seed, mt_struct *mts){
-    int i;
+	int i;
 
-    mts->state[0] = seed & mts->wmask;
+	mts->state[0] = seed & mts->wmask;
 
-    for(i = 1; i < mts->nn; i++){
-        mts->state[i] = (UINT32_C(1812433253) * (mts->state[i - 1] ^ (mts->state[i - 1] >> 30)) + i) & mts->wmask;
-        /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
-        /* In the previous versions, MSBs of the seed affect   */
-        /* only MSBs of the array mt[].                        */
-    }
-    mts->i = mts->nn;
+	for(i = 1; i < mts->nn; i++){
+		mts->state[i] = (UINT32_C(1812433253) * (mts->state[i - 1] ^ (mts->state[i - 1] >> 30)) + i) & mts->wmask;
+		/* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
+		/* In the previous versions, MSBs of the seed affect   */
+		/* only MSBs of the array mt[].                        */
+	}
+	mts->i = mts->nn;
 }
 
 // Extract pointer value from int or long
