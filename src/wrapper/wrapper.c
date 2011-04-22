@@ -44,6 +44,53 @@ static void sgenrand_mt_modified(uint32_t seed, mt_struct *mts){
 	mts->i = mts->nn;
 }
 
+// Slightly optimised reference implementation of the Mersenne Twister,
+// taken from numpy 1.5.1
+// (replaced "x&1U ? aa : 0U" with "-(x & 1) & aa")
+static uint32_t genrand_mt_modified(mt_struct *mts)
+{
+	uint32_t *st, uuu, lll, aa, x;
+	int k,n,m,lim;
+
+	if(mts->i == mts->nn)
+	{
+		n = mts->nn; m = mts->mm;
+		aa = mts->aaa;
+		st = mts->state;
+		uuu = mts->umask; lll = mts->lmask;
+
+		lim = n - m;
+		for(k = 0; k < lim; k++)
+		{
+			x = (st[k] & uuu) | (st[k+1] & lll);
+			st[k] = st[k+m] ^ (x>>1) ^ (-(x & 1) & aa);
+		}
+
+		lim = n - 1;
+		for (; k < lim; k++)
+		{
+			x = (st[k] & uuu) | (st[k+1] & lll);
+			st[k] = st[k+m-n] ^ (x>>1) ^ (-(x & 1) & aa);
+		}
+
+		x = (st[n-1] & uuu) | (st[0] & lll);
+		st[n-1] = st[m-1] ^ (x >> 1) ^ (-(x & 1) & aa);
+
+		mts->i = 0;
+	}
+
+	x = mts->state[mts->i];
+	mts->i += 1;
+
+	/* Tempering */
+	x ^= (x >> mts->shift0);
+	x ^= (x << mts->shiftB) & mts->maskB;
+	x ^= (x << mts->shiftC) & mts->maskC;
+	x ^= (x >> mts->shift1);
+
+	return x;
+}
+
 // Extract pointer value from int or long
 static int parse_pointer(PyObject *obj, void **ptr)
 {
@@ -257,7 +304,7 @@ static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
 	size_t offset = (size_t)mt_ptr->state;
 	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	for(int i = 0; i < size; i++)
-		((uint32_t*)(arr->data))[i] = genrand_mt(mt_ptr);
+		((uint32_t*)(arr->data))[i] = genrand_mt_modified(mt_ptr);
 	mt_ptr->state = (uint32_t*)offset;
 
 	Py_RETURN_NONE;
