@@ -1,6 +1,6 @@
 import numpy
 from time import time
-from ctypes import Structure, POINTER, c_int, c_uint32, addressof, sizeof
+from ctypes import Structure, addressof, sizeof
 
 from _libdcmt import create_mt_structs, fill_mt_structs, \
 	fill_mt_structs_stripped, init_mt_struct, fill_rand_int, free_mt_structs
