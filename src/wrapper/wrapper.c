@@ -171,10 +171,10 @@ static PyObject* dcmt_fill_mt_structs(PyObject *self, PyObject *args)
 {
 	PyObject *mts_address_obj = NULL;
 	PyObject *ptr_obj = NULL;
-	int elem_size = 0, vec_offset = 0, count = 0;
+	int elem_size = 0, count = 0;
 
-	if(!PyArg_ParseTuple(args, "OiiOi:fill_mt_structs",
-			&mts_address_obj, &elem_size, &vec_offset, &ptr_obj, &count))
+	if(!PyArg_ParseTuple(args, "OiOi:fill_mt_structs",
+			&mts_address_obj, &elem_size, &ptr_obj, &count))
 		return NULL;
 
 	mt_struct **ptr = (mt_struct **)PyLong_AsVoidPtr(ptr_obj);

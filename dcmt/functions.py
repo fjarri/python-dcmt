@@ -55,7 +55,7 @@ def create_mts(**kwds):
 			_fields_ = fields
 
 		mts = (mt_struct * count)()
-		fill_mt_structs(addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset, ptr, count)
+		fill_mt_structs(addressof(mts), sizeof(mt_struct), ptr, count)
 	finally:
 		free_mt_structs(ptr, count)
 
