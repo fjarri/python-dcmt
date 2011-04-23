@@ -89,7 +89,8 @@ Reference
           521, 607, 1279, 2203, 2281, 3217, 4253, 4423, 9689,
           9941, 11213, 19937, 21701, 23209, 44497.
 
-   :param start_id, max_id: Range of identifiers for generators. Usually these are
+   :param start_id:
+   :param max_id: Range of identifiers for generators. Usually these are
           node, processor or thread IDs. All identifiers must be between 0 and 65535,
           and ``start_id`` must be lower than or equal to ``max_id``.
 
