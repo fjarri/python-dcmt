@@ -47,6 +47,12 @@ class NumpyExtension(Extension):
 
 	include_dirs = property(get_include_dirs, set_include_dirs, del_include_dirs)
 
+# Being DRY adept and generating header file with C structures
+from dcmt.structures import generate_header
+header = generate_header()
+with open(os.path.join(setup_dir, 'src', 'wrapper', 'structures.h'), 'w') as f:
+	f.write(header)
+
 libdcmt = NumpyExtension('dcmt._libdcmt',
 	sources = [
 		'src/dcmt/lib/check32.c',

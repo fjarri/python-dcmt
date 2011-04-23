@@ -57,3 +57,28 @@ class mt_struct_base(Structure):
 		# not present in original mt_struct
 		("state_vec", c_uint32)
 	]
+
+def generate_declaration(struct_cls):
+	type_mapping = {
+		c_uint32: 'uint32_t',
+		c_int: 'int',
+		POINTER(c_uint32): 'uint32_t*',
+	}
+
+	struct_name = struct_cls.__name__
+	res = "typedef struct _" + struct_name + " {\n"
+
+	for name, tp in struct_cls._fields_:
+		if tp in type_mapping:
+			res += "\t" + type_mapping[tp] + " " + name + ";\n"
+		else:
+			raise Exception("Unknown type: " + str(tp))
+
+	res += "} " + struct_name + ";\n"
+
+	return res
+
+def generate_header():
+	declarations = [generate_declaration(x) for x in
+		(mt_common, mt_stripped, mt_struct_base)]
+	return "\n".join(declarations)

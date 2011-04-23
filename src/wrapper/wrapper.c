@@ -3,19 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <numpy/arrayobject.h>
-
-// matches structure definition in dcmt.functions
-typedef struct {
-	int mm, nn, rr, ww;
-	uint32_t wmask, umask, lmask;
-	int shift0, shift1, shiftB, shiftC;
-} mt_common;
-
-// matches structure definition in dcmt.functions
-typedef struct {
-	uint32_t aaa, maskB, maskC;
-	int i;
-} mt_stripped;
+#include "structures.h" // automatically generated in setup script
 
 PyMODINIT_FUNC init_libdcmt(void);
 
