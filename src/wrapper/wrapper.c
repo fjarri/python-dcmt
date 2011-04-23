@@ -104,6 +104,21 @@ static int parse_pointer(PyObject *obj, void **ptr)
 	return true;
 }
 
+// Convenience function to get mt_struct pointer from PyObject
+// with refreshed state vector pointer
+static mt_struct *parse_mt_struct_ptr(PyObject *mt_address_obj)
+{
+	mt_struct_base *mt_ptr = NULL;
+	if(!parse_pointer(mt_address_obj, (void **)&mt_ptr))
+		return NULL;
+
+	// Since the original ctypes.Structure object could be copied or pickled/unpickled,
+	// the state vector pointer may be invalid.
+	// We are refreshing it using known offset from our mt_struct_base structure.
+	mt_ptr->state = &(mt_ptr->state_vec);
+	return (mt_struct *)mt_ptr;
+}
+
 // Exported function: create MT generator structures
 static PyObject* dcmt_create_mt_structs(PyObject *self, PyObject *args)
 {
@@ -176,14 +191,8 @@ static PyObject* dcmt_fill_mt_structs(PyObject *self, PyObject *args)
 		mt_struct *elem = (mt_struct *)(mts_ptr + elem_size * i);
 
 		// discarding state vector part of mt_struct, as well as
-		// mt_struct.i field, since they are filled only on initialization
+		// mt_struct.i field, since they are filled only on initialization/usage
 		memcpy(elem, ptr[i], offsetof(mt_struct, i));
-
-		// Pointer to state vector will be substituted during calls to
-		// sgenrand_mt()/genrand_mt()
-		// In the meantime we are keeping offset to state vector in 'state' field
-		// and not the actual pointer to allow user copy this struct in Python freely.
-		elem->state = (uint32_t*)(size_t)vec_offset;
 	}
 
 	Py_RETURN_NONE;
@@ -253,17 +262,11 @@ static PyObject* dcmt_init_mt_struct(PyObject *self, PyObject *args)
 	// just a precaution; seed is guaranteed to fit 32 bits
 	uint32_t seed = (uint32_t)int_seed;
 
-	mt_struct *mt_ptr = NULL;
-	if(!parse_pointer(mt_address_obj, (void **)&mt_ptr))
+	mt_struct *mt_ptr = parse_mt_struct_ptr(mt_address_obj);
+	if(NULL == mt_ptr)
 		return NULL;
 
-	// temporarily substitute offset with real pointer which dcmt expects
-	// FIXME: remove this trick by fixing dcmt or by using list instead of
-	// ctypes array in Python part (so that I can set copy constructor etc)
-	size_t offset = (size_t)mt_ptr->state;
-	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	sgenrand_mt_modified(seed, mt_ptr);
-	mt_ptr->state = (uint32_t*)offset;
 
 	Py_RETURN_NONE;
 }
@@ -281,18 +284,12 @@ static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
 	for(int i = 0; i < arr->nd; i++)
 		size *= arr->dimensions[i];
 
-	mt_struct *mt_ptr = NULL;
-	if(!parse_pointer(mt_address_obj, (void **)&mt_ptr))
+	mt_struct *mt_ptr = parse_mt_struct_ptr(mt_address_obj);
+	if(NULL == mt_ptr)
 		return NULL;
 
-	// temporarily substitute offset with real pointer which dcmt expects
-	// FIXME: remove this trick by fixing dcmt or by using list instead of
-	// ctypes array in Python part (so that I can set copy constructor etc)
-	size_t offset = (size_t)mt_ptr->state;
-	mt_ptr->state = (uint32_t*)((char*)mt_ptr + offset);
 	for(int i = 0; i < size; i++)
 		((uint32_t*)(arr->data))[i] = genrand_mt_modified(mt_ptr);
-	mt_ptr->state = (uint32_t*)offset;
 
 	Py_RETURN_NONE;
 }
