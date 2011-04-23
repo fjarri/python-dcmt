@@ -5,32 +5,7 @@ from ctypes import Structure, POINTER, c_int, c_uint32, addressof, sizeof
 from _libdcmt import create_mt_structs, fill_mt_structs, \
 	fill_mt_structs_stripped, init_mt_struct, fill_rand_int, free_mt_structs
 from .exceptions import DcmtParameterError
-
-
-# matches structure definitions in C extension
-class mt_common(Structure):
-	_fields_ = [
-		("mm", c_int),
-		("nn", c_int),
-		("rr", c_int),
-		("ww", c_int),
-		("wmask", c_uint32),
-		("umask", c_uint32),
-		("lmask", c_uint32),
-		("shift0", c_int),
-		("shift1", c_int),
-		("shiftB", c_int),
-		("shiftC", c_int)
-	]
-
-# matches structure definitions in C extension
-class mt_stripped(Structure):
-	_fields_ = [
-		("aaa", c_uint32),
-		("maskB", c_uint32),
-		("maskC", c_uint32),
-		("i", c_int)
-	]
+from .structures import mt_common, mt_stripped, mt_struct_base
 
 
 def validate_seed(seed):
@@ -73,35 +48,11 @@ def create_mts(**kwds):
 
 	# being extra-paranoidal
 	try:
-		# Original library allocates two separate pieces of memory on a heap,
-		# because the size of mt_struct depends on state vector size.
-		# Since I will not use dcmt functions to delete mt_struct instances,
-		# it is more convenient to keep everything in one struct,
-		# using dynamic features of Python to build necessary class.
+		# extending the ending array in mt_struct_base keeping its name and type
+		fields = mt_struct_base._fields_[:]
+		fields[-1] = (fields[-1][0], fields[-1][1] * state_len)
 		class mt_struct(Structure):
-			_fields_ = [
-				("aaa", c_uint32),
-				("mm", c_int),
-				("nn", c_int),
-				("rr", c_int),
-				("ww", c_int),
-				("wmask", c_uint32),
-				("umask", c_uint32),
-				("lmask", c_uint32),
-				("shift0", c_int),
-				("shift1", c_int),
-				("shiftB", c_int),
-				("shiftC", c_int),
-				("maskB", c_uint32),
-				("maskC", c_uint32),
-
-				# filled on generator initialization
-				("i", c_int),
-				("state", POINTER(c_uint32)),
-
-				# not present in original mt_struct
-				("state_vec", c_uint32 * state_len)
-			]
+			_fields_ = fields
 
 		mts = (mt_struct * count)()
 		fill_mt_structs(addressof(mts), sizeof(mt_struct), mt_struct.state_vec.offset, ptr, count)
