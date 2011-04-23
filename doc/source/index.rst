@@ -94,7 +94,9 @@ Reference
           node, processor or thread IDs. All identifiers must be between 0 and 65535,
           and ``start_id`` must be lower than or equal to ``max_id``.
 
-   :param seed: seed for randomizing generator parameters. If not set, current time is used.
+   :param seed: seed for randomizing generator parameters.
+          Must be an integer or hashable type; will be truncated to the range [0, 2^32).
+          If not set, system random numbers generator or current time is used.
           RNGs created with the same ``seed`` and ID are guaranteed to be the same.
 
    :returns: sequence of generator objects, which should be considered opaque
@@ -130,8 +132,8 @@ Reference
 
    :param mt: one of generator objects, created with :py:func:`~create_mts`.
 
-   :param seed: seed for randomizing generator state. If not set, current time is used.
-          The function is guaranteed to create the same RNG state if given the same seed.
+   :param seed: seed for randomizing generator state.
+          Requirements are the same as in :py:func:`~create_mts`.
 
 .. function:: rand(mt, shape)
 

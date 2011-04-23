@@ -54,17 +54,18 @@ class TestErrors(unittest.TestCase):
 
 	def testSeed(self):
 
-		# since keywords are processed in extension, test that even not mentioning
-		# keyword parameter works
+		# check that default (random) seed works
 		create_mts()
 
 		# correct seeds
-		for seed in (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1)):
+		for seed in (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1),
+				-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32),
+				(1, 2, 3)):
 			mts = create_mts(seed=seed)
 			init_mt(mts[0], seed=seed)
 
 		# incorrect seeds
-		for seed in (-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32)):
+		for seed in ({}, []):
 			self.assertRaises(DcmtParameterError, create_mts, seed=seed)
 
 			mts = create_mts()

@@ -1,6 +1,8 @@
 import numpy
 from time import time
 from ctypes import Structure, addressof, sizeof
+from os import urandom as _urandom
+from binascii import hexlify as _hexlify
 
 from _libdcmt import create_mt_structs, fill_mt_structs, \
 	fill_mt_structs_stripped, init_mt_struct, fill_rand_int, free_mt_structs
@@ -8,13 +10,29 @@ from .exceptions import DcmtParameterError
 from .structures import mt_common, mt_stripped, mt_struct_base
 
 
-def validate_seed(seed):
-	"""Return valid seed or raise an exception"""
+def get_seed(seed):
+	"""
+	Return valid seed or raise an exception
+
+	Partially nicked from Python library.
+	Don't want to move this to extension like they did though,
+	because it is hardly a bottleneck.
+	"""
 
 	if seed is None:
-		return int(time()) % (2 ** 32)
-	elif seed < 0 or seed > 2 ** 32 - 1:
-		raise DcmtParameterError("Seed must be between 0 and 2^32-1")
+		try:
+			seed = long(_hexlify(_urandom(16)), 16)
+		except NotImplementedError:
+			import time
+			seed = long(time.time() * 256) # use fractional seconds
+
+	if type(seed) not in (int, long):
+		try:
+			seed = hash(seed)
+		except TypeError:
+			raise DcmtParameterError("Seed must be an integer or hashable type")
+
+	return seed & (2 ** 32 - 1)
 
 	return seed
 
@@ -37,7 +55,7 @@ def validate_parameters(wordlen=32, exponent=521, start_id=0, max_id=0, seed=Non
 			9689, 9941, 11213, 19937, 21701, 23209, 44497):
 		raise DcmtParameterError("Mersenne exponent is incorrect or not from a supported set")
 
-	return wordlen, exponent, start_id, max_id, validate_seed(seed)
+	return wordlen, exponent, start_id, max_id, get_seed(seed)
 
 def create_mts(**kwds):
 	"""Create array of ctypes Structures with RNG parameters"""
@@ -63,7 +81,7 @@ def create_mts(**kwds):
 
 def init_mt(mt, seed=None):
 	"""Initialize RNG structure with given seed"""
-	seed = validate_seed(seed)
+	seed = get_seed(seed)
 	init_mt_struct(addressof(mt), seed)
 
 def rand(mt, shape):
