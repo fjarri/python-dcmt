@@ -128,7 +128,7 @@ Reference
 
    Initializes generator state with given seed.
 
-   :param mt: one of generator objects, created with :py:func:`~create_generators`.
+   :param mt: one of generator objects, created with :py:func:`~create_mts`.
 
    :param seed: seed for randomizing generator state. If not set, current time is used.
           The function is guaranteed to create the same RNG state if given the same seed.
