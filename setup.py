@@ -11,13 +11,17 @@ if not (major == 2 and minor >= 5):
 
 import os.path
 
+def get_symbol(path, symbol):
+	full_path = os.path.join(setup_dir, *path)
+	globals_dict = {}
+	execfile(full_path, globals_dict)
+	return globals_dict[symbol]
+
+
 setup_dir = os.path.split(os.path.abspath(__file__))[0]
 DOCUMENTATION = open(os.path.join(setup_dir, 'README.rst')).read()
 
-dcmt_path = os.path.join(setup_dir, 'dcmt', 'version.py')
-globals_dict = {}
-execfile(dcmt_path, globals_dict)
-VERSION = globals_dict['VERSION_STRING']
+VERSION = get_symbol(('dcmt', 'version.py'), 'VERSION_STRING')
 
 
 class NumpyExtension(Extension):
@@ -48,7 +52,7 @@ class NumpyExtension(Extension):
 	include_dirs = property(get_include_dirs, set_include_dirs, del_include_dirs)
 
 # Being DRY adept and generating header file with C structures
-from dcmt.structures import generate_header
+generate_header = get_symbol(('dcmt', 'structures.py'), 'generate_header')
 header = generate_header()
 with open(os.path.join(setup_dir, 'src', 'wrapper', 'structures.h'), 'w') as f:
 	f.write(header)
