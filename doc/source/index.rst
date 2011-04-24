@@ -19,7 +19,7 @@ Quick Start
 
 We will start from importing the module:
 
- >>> from dcmt import create_mts, init_mt, rand
+ >>> from dcmt import create_mts, init_mt, randraw
 
 Creating three independent RNGs with default parameters:
 
@@ -36,17 +36,17 @@ Here seeds can be omitted too, in which case ``time(NULL)`` is used.
 These seeds are independent of the one that was used to create generators.
 After initialisation every generator is ready to produce random numbers:
 
- >>> rand(mts[0], (4,))
+ >>> randraw(mts[0], 4)
  array([1906178639, 1943589963, 1600596477,  592883390], dtype=uint32)
- >>> rand(mts[1], (4,))
+ >>> randraw(mts[1], 4)
  array([2586093748,  199032518, 4119501648, 3446361745], dtype=uint32)
- >>> rand(mts[2], (4,))
+ >>> randraw(mts[2], 4)
  array([ 992714192, 1771411355, 1256520595,   93513968], dtype=uint32)
- >>> rand(mts[0], (4,))
+ >>> randraw(mts[0], 4)
  array([3727792825,   15188662,  882751098, 1784690177], dtype=uint32)
- >>> rand(mts[1], (4,))
+ >>> randraw(mts[1], 4)
  array([3218870609,  450586145, 2537490204,  189269991], dtype=uint32)
- >>> rand(mts[2], (4,))
+ >>> randraw(mts[2], 4)
  array([2266385156, 2486337585, 1586629291, 2718290559], dtype=uint32)
 
 Every element of ``mts`` sequence can be copied or saved freely,
@@ -135,10 +135,11 @@ Reference
    :param seed: seed for randomizing generator state.
           Requirements are the same as in :py:func:`~create_mts`.
 
-.. function:: rand(mt, shape)
+.. function:: randraw(mt, *shape)
 
-   Produces ``numpy`` array filled with random numbers; range depends on ``wordlen``
-   parameter specified during RNG creation with :py:func:`~create_mts`.
+   Produces ``numpy`` array filled with random integer numbers;
+   range depends on ``wordlen`` parameter specified during RNG creation with
+   :py:func:`~create_mts`.
 
    :param mt: one of generator objects, created with :py:func:`~create_mts`
           and initialized with :py:func:`~init_mt` at least once.
@@ -146,4 +147,16 @@ Reference
    :param shape: shape of resulting array.
 
    :returns: ``numpy`` array of type ``numpy.uint32`` with shape ``shape``
-             filled with random numbers in range [0, 2^wordlen-1]
+             filled with random numbers in range [0, 2^wordlen-1].
+
+.. function:: rand(mt, *shape)
+
+   Produces ``numpy`` array filled with random floating-point numbers.
+
+   :param mt: one of generator objects, created with :py:func:`~create_mts`
+          and initialized with :py:func:`~init_mt` at least once.
+
+   :param shape: shape of resulting array.
+
+   :returns: ``numpy`` array of type ``numpy.float64`` with shape ``shape``
+             filled with random numbers in range [0, 1).
