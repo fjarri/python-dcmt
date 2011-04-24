@@ -152,6 +152,21 @@ class TestPyRandom(unittest.TestCase):
 		for r in reference:
 			self.assertEqual(r, rng.random())
 
+	def testState(self):
+
+		rng = DcmtRandom(id=10, seed=5)
+		rng.seed(20)
+
+		state = rng.getstate()
+
+		rng2 = DcmtRandom()
+		rng2.setstate(state)
+
+		for i in xrange(16):
+			r1 = rng.random()
+			r2 = rng2.random()
+			self.assertEqual(r1, r2)
+
 
 if __name__ == '__main__':
 

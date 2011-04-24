@@ -1,5 +1,4 @@
 from random import Random
-import copy
 from ctypes import addressof
 
 from .functions import create_mts, init_mt
@@ -21,20 +20,41 @@ class _DcmtRandom(Random):
 		init_mt(self._mt_struct, seed=a)
 
 	def getstate(self):
-	 	"""Return internal state; can be passed to setstate() later."""
-	 	return copy.copy(self._mt_ptr)
+		"""Return internal state; can be passed to setstate() later."""
+		fields = []
+		for name, _ in self._mt_struct._fields_:
+			if name == 'state':
+				fields.append(0)
+			elif name == 'state_vec':
+				fields.append(tuple(i for i in self._mt_struct.state_vec))
+			else:
+				fields.append(getattr(self._mt_struct, name))
+
+	 	return (1, tuple(fields))
 
 	def setstate(self, state):
-	 	"""Restore internal state from object returned by getstate()."""
-		self._mt_struct = copy.copy(state)
+		"""Restore internal state from object returned by getstate()."""
+		version, fields = state
+		assert version == 1, "State version " + str(version) + " is not supported"
+
+		for field, field_pair in zip(fields, self._mt_struct._fields_):
+			name, tp = field_pair
+			if name == 'state':
+				pass
+			elif name == 'state_vec':
+				for i, e in enumerate(field):
+					self._mt_struct.state_vec[i] = e
+			else:
+				setattr(self._mt_struct, name, tp(field))
+
 		self._mt_ptr = addressof(self._mt_struct)
 
 	def jumpahead(self, n):
-	 	"""Jump to a distant state"""
+		"""Jump to a distant state"""
 		jumpahead(self._mt_ptr, n)
 
 	def getrandbits(self, k):
-	 	"""getrandbits(k) -> x. Generates a long int with k random bits."""
+		"""getrandbits(k) -> x. Generates a long int with k random bits."""
 		return getrandbits(self._mt_ptr)
 
 
