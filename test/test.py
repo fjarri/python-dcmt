@@ -2,7 +2,7 @@ import unittest
 import numpy
 import gc
 from dcmt import create_mts, create_mts_stripped, init_mt, rand, randraw, \
-	DcmtParameterError
+	DcmtParameterError, DcmtRandom
 
 class TestErrors(unittest.TestCase):
 
@@ -136,11 +136,28 @@ class TestStripped(unittest.TestCase):
 					self.assertEqual(getattr(mt1, field), getattr(mt2, field))
 
 
+class TestPyRandom(unittest.TestCase):
+
+	def testCreation(self):
+
+		mts = create_mts(start_id=2, max_id=2, seed=5)
+		init_mt(mts[0], seed=10)
+
+		rng = DcmtRandom(id=2, seed=5)
+		rng.seed(10)
+
+		N  = 16
+		reference = rand(mts[0], N)
+
+		for r in reference:
+			self.assertEqual(r, rng.random())
+
+
 if __name__ == '__main__':
 
 	suites = []
 
-	for cls in (TestErrors, TestBasics, TestStripped):
+	for cls in (TestErrors, TestBasics, TestStripped, TestPyRandom):
 		suites.append(unittest.TestLoader().loadTestsFromTestCase(cls))
 
 	all_tests = unittest.TestSuite(suites)
