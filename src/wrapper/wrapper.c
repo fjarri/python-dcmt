@@ -341,6 +341,113 @@ static PyObject* dcmt_fill_numpy_randraw(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *dcmt_random(PyObject *self, PyObject *args)
+{
+	PyObject *mt_address_obj = NULL;
+
+	if(!PyArg_UnpackTuple(args, "random", 1, 1, &mt_address_obj))
+		return NULL;
+
+	mt_struct *mt_ptr = parse_mt_struct_ptr(mt_address_obj);
+	if(NULL == mt_ptr)
+		return NULL;
+
+	return PyFloat_FromDouble(random_float(mt_ptr));
+}
+
+// taken from Python standard library
+static PyObject *dcmt_getrandbits(PyObject *self, PyObject *args)
+{
+    int k, i, bytes;
+    unsigned long r;
+    unsigned char *bytearray;
+    PyObject *result;
+	PyObject *mt_address_obj = NULL;
+
+    if(!PyArg_ParseTuple(args, "Oi:getrandbits", &mt_address_obj, &k))
+        return NULL;
+
+	mt_struct *mt_ptr = parse_mt_struct_ptr(mt_address_obj);
+	if(NULL == mt_ptr)
+		return NULL;
+
+    if (k <= 0) {
+        PyErr_SetString(PyExc_ValueError, "number of bits must be greater than zero");
+        return NULL;
+    }
+
+    bytes = ((k - 1) / 32 + 1) * 4;
+    bytearray = (unsigned char *)PyMem_Malloc(bytes);
+    if (bytearray == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+    /* Fill-out whole words, byte-by-byte to avoid endianness issues */
+    for (i=0 ; i<bytes ; i+=4, k-=32) {
+        r = random_uint32(mt_ptr);
+        if (k < 32)
+            r >>= (32 - k);
+        bytearray[i+0] = (unsigned char)r;
+        bytearray[i+1] = (unsigned char)(r >> 8);
+        bytearray[i+2] = (unsigned char)(r >> 16);
+        bytearray[i+3] = (unsigned char)(r >> 24);
+    }
+
+    /* little endian order to match bytearray assignment order */
+    result = _PyLong_FromByteArray(bytearray, bytes, 1, 0);
+    PyMem_Free(bytearray);
+    return result;
+}
+
+static PyObject *dcmt_jumpahead(PyObject *self, PyObject *args)
+{
+	long i, j;
+	PyObject *iobj;
+	PyObject *remobj;
+	PyObject *n;
+	uint32_t *mt, tmp;
+	PyObject *mt_address_obj;
+
+	if(!PyArg_UnpackTuple(args, "jumpahead", 2, 2, &mt_address_obj, &n))
+		return NULL;
+
+	mt_struct *mt_ptr = parse_mt_struct_ptr(mt_address_obj);
+	if(NULL == mt_ptr)
+		return NULL;
+
+	if (!PyInt_Check(n) && !PyLong_Check(n)) {
+		PyErr_Format(PyExc_TypeError, "jumpahead requires an "
+			"integer, not '%s'", Py_TYPE(n)->tp_name);
+		return NULL;
+	}
+
+	mt = mt_ptr->state;
+	for (i = mt_ptr->nn - 1; i > 1; i--) {
+		iobj = PyInt_FromLong(i);
+		if (iobj == NULL)
+			return NULL;
+		remobj = PyNumber_Remainder(n, iobj);
+		Py_DECREF(iobj);
+		if (remobj == NULL)
+			return NULL;
+		j = PyInt_AsLong(remobj);
+		Py_DECREF(remobj);
+		if (j == -1L && PyErr_Occurred())
+			return NULL;
+		tmp = mt[i];
+		mt[i] = mt[j];
+		mt[j] = tmp;
+	}
+
+	for (i = 0; i < mt_ptr->nn; i++)
+		mt[i] += i+1;
+
+	mt_ptr->i = mt_ptr->nn;
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef dcmt_methods[] = {
 	{"create_mt_structs", dcmt_create_mt_structs, METH_VARARGS,
 		"Create C structures with MT RNGs"},
@@ -357,6 +464,10 @@ static PyMethodDef dcmt_methods[] = {
 		"Fill numpy array with random floating-point numbers"},
 	{"fill_numpy_randraw", dcmt_fill_numpy_randraw, METH_VARARGS,
 		"Fill numpy array with random integer numbers"},
+
+	{"random", dcmt_random, METH_VARARGS, "Return random floating-point number"},
+	{"getrandbits", dcmt_getrandbits, METH_VARARGS, "Return sequence of random bits"},
+	{"jumpahead", dcmt_jumpahead, METH_VARARGS, "Change generator state N draws to the future"},
 
 	{NULL, NULL}
 };
