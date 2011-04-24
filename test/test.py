@@ -1,7 +1,8 @@
 import unittest
 import numpy
 import gc
-from dcmt import create_mts, create_mts_stripped, init_mt, rand, DcmtParameterError
+from dcmt import create_mts, create_mts_stripped, init_mt, rand, randraw, \
+	DcmtParameterError
 
 class TestErrors(unittest.TestCase):
 
@@ -80,8 +81,8 @@ class TestBasics(unittest.TestCase):
 		init_mt(mts[1], seed=3)
 
 		shape = (10,)
-		randoms0 = rand(mts[0], shape)
-		randoms1 = rand(mts[1], shape)
+		randoms0 = randraw(mts[0], shape)
+		randoms1 = randraw(mts[1], shape)
 
 		for r0, r1 in zip(randoms0, randoms1):
 			self.assertNotEqual(r0, r1)
@@ -95,7 +96,7 @@ class TestBasics(unittest.TestCase):
 		for i in xrange(2):
 			mts = create_mts(start_id=gen_id, max_id=gen_id, seed=gen_seed)
 			init_mt(mts[0], seed=init_seed)
-			randoms = rand(mts[0], (10,))
+			randoms = randraw(mts[0], (10,))
 			random_sets.append(randoms)
 
 		for r0, r1 in zip(random_sets[0], random_sets[1]):
@@ -107,7 +108,7 @@ class TestBasics(unittest.TestCase):
 			mts = create_mts(wordlen=wordlen, seed=99)
 			init_mt(mts[0])
 
-			r = rand(mts[0], (64,))
+			r = randraw(mts[0], (64,))
 			self.assert_((r >= 0).all() and (r <= 2**wordlen - 1).all())
 
 

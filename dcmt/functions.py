@@ -5,7 +5,8 @@ from os import urandom as _urandom
 from binascii import hexlify as _hexlify
 
 from _libdcmt import create_mt_structs, fill_mt_structs, \
-	fill_mt_structs_stripped, init_mt_struct, fill_rand_int, free_mt_structs
+	fill_mt_structs_stripped, init_mt_struct, fill_numpy_rand, \
+	fill_numpy_randraw, free_mt_structs
 from .exceptions import DcmtParameterError
 from .structures import mt_common, mt_stripped, mt_struct_base
 
@@ -84,12 +85,6 @@ def init_mt(mt, seed=None):
 	seed = get_seed(seed)
 	init_mt_struct(addressof(mt), seed)
 
-def rand(mt, shape):
-	"""Return numpy array with random numbers"""
-	randoms = numpy.empty(shape, dtype=numpy.uint32)
-	fill_rand_int(addressof(mt), randoms)
-	return randoms
-
 def create_mts_stripped(**kwds):
 	"""Return optimized RNG structures"""
 	wordlen, exponent, start_id, max_id, seed = validate_parameters(**kwds)
@@ -104,3 +99,18 @@ def create_mts_stripped(**kwds):
 		free_mt_structs(ptr, count)
 
 	return mts_common, mts_stripped
+
+# numpy mimicking methods
+
+def randraw(mt, *shape):
+	"""Return numpy array with random integer numbers"""
+	randoms = numpy.empty(*shape, dtype=numpy.uint32)
+	fill_numpy_randraw(addressof(mt), randoms)
+	return randoms
+
+def rand(mt, *shape):
+	"""Return numpy array with random floating-point numbers"""
+	randoms = numpy.empty(*shape, dtype=numpy.float64)
+	fill_numpy_rand(addressof(mt), randoms)
+	return randoms
+

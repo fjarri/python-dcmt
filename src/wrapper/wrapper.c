@@ -119,6 +119,31 @@ static mt_struct *parse_mt_struct_ptr(PyObject *mt_address_obj)
 	return (mt_struct *)mt_ptr;
 }
 
+static uint32_t random_uint32(mt_struct *mt)
+{
+	return genrand_mt_modified(mt);
+}
+
+// Taken from Python standard library
+/* random_random is the function named genrand_res53 in the original code;
+* generates a random number on [0,1) with 53-bit resolution; note that
+* 9007199254740992 == 2**53; I assume they're spelling "/2**53" as
+* multiply-by-reciprocal in the (likely vain) hope that the compiler will
+* optimize the division away at compile-time. 67108864 is 2**26. In
+* effect, a contains 27 random bits shifted left 26, and b fills in the
+* lower 26 bits of the 53-bit numerator.
+* The orginal code credited Isaku Wada for this algorithm, 2002/01/09.
+*/
+static double random_float(mt_struct *mt)
+{
+	uint32_t a = random_uint32(mt) >> 5, b = random_uint32(mt) >> 6;
+	return (double)((a * 67108864.0 + b) * (1.0 / 9007199254740992.0));
+}
+
+// *******************************************************
+// Exported functions
+// *******************************************************
+
 // Exported function: create MT generator structures
 static PyObject* dcmt_create_mt_structs(PyObject *self, PyObject *args)
 {
@@ -272,12 +297,12 @@ static PyObject* dcmt_init_mt_struct(PyObject *self, PyObject *args)
 }
 
 // Exported function: fill numpy array with random numbers
-static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
+static PyObject* dcmt_fill_numpy_rand(PyObject *self, PyObject *args)
 {
 	PyObject *mt_address_obj = NULL;
 	PyArrayObject *arr = NULL;
 
-	if(!PyArg_UnpackTuple(args, "fill_rand_int", 2, 2, &mt_address_obj, &arr))
+	if(!PyArg_UnpackTuple(args, "fill_numpy_rand", 2, 2, &mt_address_obj, &arr))
 		return NULL;
 
 	size_t size = 1;
@@ -289,7 +314,29 @@ static PyObject* dcmt_fill_rand_int(PyObject *self, PyObject *args)
 		return NULL;
 
 	for(int i = 0; i < size; i++)
-		((uint32_t*)(arr->data))[i] = genrand_mt_modified(mt_ptr);
+		((double*)(arr->data))[i] = random_float(mt_ptr);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject* dcmt_fill_numpy_randraw(PyObject *self, PyObject *args)
+{
+	PyObject *mt_address_obj = NULL;
+	PyArrayObject *arr = NULL;
+
+	if(!PyArg_UnpackTuple(args, "fill_numpy_randraw", 2, 2, &mt_address_obj, &arr))
+		return NULL;
+
+	size_t size = 1;
+	for(int i = 0; i < arr->nd; i++)
+		size *= arr->dimensions[i];
+
+	mt_struct *mt_ptr = parse_mt_struct_ptr(mt_address_obj);
+	if(NULL == mt_ptr)
+		return NULL;
+
+	for(int i = 0; i < size; i++)
+		((uint32_t*)(arr->data))[i] = random_uint32(mt_ptr);
 
 	Py_RETURN_NONE;
 }
@@ -305,8 +352,12 @@ static PyMethodDef dcmt_methods[] = {
 		"Fill stripped Python structures with MT RNGs"},
 	{"init_mt_struct", dcmt_init_mt_struct, METH_VARARGS,
 		"Initialize Python MT RNG structures with a seed"},
-	{"fill_rand_int", dcmt_fill_rand_int, METH_VARARGS,
-		"Fill numpy array with random numbers"},
+
+	{"fill_numpy_rand", dcmt_fill_numpy_rand, METH_VARARGS,
+		"Fill numpy array with random floating-point numbers"},
+	{"fill_numpy_randraw", dcmt_fill_numpy_randraw, METH_VARARGS,
+		"Fill numpy array with random integer numbers"},
+
 	{NULL, NULL}
 };
 
