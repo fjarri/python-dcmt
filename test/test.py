@@ -1,20 +1,51 @@
 import unittest
 import numpy
 import gc
-from dcmt import create_mts, create_mts_stripped, init_mt, rand, randraw, \
-	DcmtParameterError, DcmtRandom
+import copy
+
+from dcmt import DcmtParameterError, DcmtError, DcmtRandom, DcmtRandomState, mt_range
+
+
+def testLimits(randoms, start, stop):
+	stop = float(stop)
+	start = float(start)
+	ideal_mean = (stop + start) / 2
+	ideal_var = (((stop - start) / 2) ** 3 / 3 * 2) / (stop - start)
+
+	return numpy.abs(randoms.mean() - ideal_mean) / (stop - start), \
+		numpy.abs(randoms.var() - ideal_var) / ideal_var
+
+def getRandomArray(rng, N):
+	if isinstance(rng, DcmtRandom):
+		return numpy.array([rng.random() for i in xrange(N)])
+	else:
+		return rng.rand(N)
+
 
 class TestErrors(unittest.TestCase):
 
 	def testWordlen(self):
 
-		# correct
-		for wordlen in (31, 32):
-			create_mts(wordlen=wordlen, seed=1)
+		ids = (1,)
+		tests = (
+			(DcmtRandom, ()),
+			(DcmtRandom.range, ids),
+			(DcmtRandomState, ()),
+			(DcmtRandomState.range, ids),
+			(mt_range, ids)
+		)
 
-		# incorrect
-		for wordlen in (16, 64):
-			self.assertRaises(DcmtParameterError, create_mts, wordlen=wordlen, seed=1)
+		for func, args in tests:
+
+			# correct
+			for wordlen in (31, 32):
+				kwds = dict(wordlen=wordlen, seed=1)
+				func(*args, **kwds)
+
+			# incorrect
+			for wordlen in (16, 64):
+				kwds = dict(wordlen=wordlen, seed=1)
+				self.assertRaises(DcmtParameterError, func, *args, **kwds)
 
 	def testExponent(self):
 
@@ -25,154 +56,262 @@ class TestErrors(unittest.TestCase):
 		# ages to process
 		correct_exponents_reduced = [521, 607]
 
-		# correct
-		for exponent in correct_exponents_reduced:
-			create_mts(exponent=exponent, seed=1)
+		ids = (1,)
+		tests = (
+			(DcmtRandom, ()),
+			(DcmtRandom.range, ids),
+			(DcmtRandomState, ()),
+			(DcmtRandomState.range, ids),
+			(mt_range, ids)
+		)
 
-		# incorrect
-		for exponent in (500, 1000, 50000):
-			self.assertRaises(DcmtParameterError, create_mts, exponent=exponent, seed=1)
+		for func, args in tests:
+
+			# correct
+			for exponent in correct_exponents_reduced:
+				kwds = dict(exponent=exponent, seed=1)
+				func(*args, **kwds)
+
+			# incorrect
+			for exponent in (500, 1000, 50000):
+				kwds = dict(exponent=exponent, seed=1)
+				self.assertRaises(DcmtParameterError, func, *args, **kwds)
 
 	def testId(self):
 
-		# error: start_id < max_id
-		self.assertRaises(DcmtParameterError, create_mts, start_id=1, max_id=0, seed=1)
+		# valid calls
+		DcmtRandom(id=20, seed=1)
+		DcmtRandom.range(1, 4, seed=1)
+		DcmtRandomState(id=3000, seed=1)
+		DcmtRandomState.range(100, 103, seed=1)
+		mt_range(4, seed=1)
 
-		# error: start_id < 0
-		self.assertRaises(DcmtParameterError, create_mts, start_id=-1, max_id=2, seed=1)
+		# check that range functions behave like Python range()
+		for func in (DcmtRandom.range, DcmtRandomState.range, mt_range):
+			for args in ((), (1, 2, 3)):
+				self.assertRaises(TypeError, func, *args)
 
-		# error: start_id > 65536
-		self.assertRaises(DcmtParameterError, create_mts, start_id=65537, max_id=65538, seed=1)
+			self.assertEqual(func(3, 1), [])
 
-		# error: max_id > 65536
-		self.assertRaises(DcmtParameterError, create_mts, start_id=65534, max_id=65538, seed=1)
+		# error: id < 0
+		self.assertRaises(DcmtParameterError, DcmtRandom, id=-1, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom.range, -1, 3, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState, id=-1, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState.range, -1, 2, seed=1)
+		self.assertRaises(DcmtParameterError, mt_range, -1, 3, seed=1)
+
+		# error: id > 65535
+		self.assertRaises(DcmtParameterError, DcmtRandom, id=65536, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom.range, 65535, 65537, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState, id=65536, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState.range, 65535, 65537, seed=1)
+		self.assertRaises(DcmtParameterError, mt_range, 65534, 65539, seed=1)
+		self.assertRaises(DcmtParameterError, mt_range, 65536, 65539, seed=1)
 
 	def testBugId9(self):
 
+		kwds = dict(wordlen=31, exponent=521, seed=1)
+
 		# known bug: cannot find generator for wordlen=31, exponent=521 and id=9
-		self.assertRaises(DcmtParameterError, create_mts, wordlen=31, exponent=521,
-			start_id=7, max_id=10, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom, id=9, **kwds)
+		self.assertRaises(DcmtParameterError, DcmtRandom.range, 8, 11, **kwds)
+		self.assertRaises(DcmtParameterError, DcmtRandomState, id=9, **kwds)
+		self.assertRaises(DcmtParameterError, DcmtRandomState.range, 8, 11, **kwds)
+		self.assertRaises(DcmtParameterError, mt_range, 7, 11, **kwds)
 
 	def testSeed(self):
 
-		# check that default (random) seed works
-		create_mts()
+		correct_seeds = (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1),
+			-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32), (1, 2, 3))
+		incorrect_seeds = ({}, [])
 
-		# correct seeds
-		for seed in (None, 0, 1, 2**16, long(2**16), 2**32 - 1, long(2**32 - 1),
-				-1, -2**32 / 2, -2**32, 2**32, 2 * 2**32, long(2**32),
-				(1, 2, 3)):
-			mts = create_mts(seed=seed)
-			init_mt(mts[0], seed=seed)
+		ids = (1,)
+		tests = (
+			(DcmtRandom, (), lambda x: x),
+			(DcmtRandom.range, ids, lambda x: x[0]),
+			(DcmtRandomState, (), lambda x: x),
+			(DcmtRandomState.range, ids, lambda x: x[0]),
+			(mt_range, ids, None)
+		)
 
-		# incorrect seeds
-		for seed in ({}, []):
-			self.assertRaises(DcmtParameterError, create_mts, seed=seed)
+		for func, args, get_rng in tests:
 
-			mts = create_mts()
-			self.assertRaises(DcmtParameterError, init_mt, mts[0], seed=seed)
+			# check that default (random) seed works
+			rng = func(*args)
+
+			if get_rng is not None:
+				get_rng(rng).seed()
+
+			# correct seeds
+			for seed in correct_seeds:
+				rng = func(*args, seed=seed)
+
+				if get_rng is not None:
+					get_rng(rng).seed(seed)
+
+			# incorrect seeds
+			for seed in incorrect_seeds:
+				self.assertRaises(DcmtParameterError, func, *args, seed=seed)
+
+				if get_rng is not None:
+					rng = get_rng(func(*args, seed=1))
+					self.assertRaises(DcmtParameterError, rng.seed, seed)
 
 
 class TestBasics(unittest.TestCase):
 
 	def testDifferentIds(self):
-		mts = create_mts(start_id=0, max_id=1, seed=10)
-		init_mt(mts[0], seed=2)
-		init_mt(mts[1], seed=3)
 
-		shape = (10,)
-		randoms0 = randraw(mts[0], shape)
-		randoms1 = randraw(mts[1], shape)
+		for cls in (DcmtRandom, DcmtRandomState):
 
-		for r0, r1 in zip(randoms0, randoms1):
-			self.assertNotEqual(r0, r1)
+			rngs = cls.range(2, seed=10)
+			rngs[0].seed(2)
+			rngs[1].seed(2)
+
+			N = 10
+			randoms0 = getRandomArray(rngs[0], N)
+			randoms1 = getRandomArray(rngs[1], N)
+
+			self.assert_((randoms0 != randoms1).all())
 
 	def testDeterminism(self):
 		gen_id = 10
-		gen_seed = 100
+		seed = 100
 		init_seed = 300
 
-		random_sets = []
-		for i in xrange(2):
-			mts = create_mts(start_id=gen_id, max_id=gen_id, seed=gen_seed)
-			init_mt(mts[0], seed=init_seed)
-			randoms = randraw(mts[0], (10,))
-			random_sets.append(randoms)
+		for cls in (DcmtRandom, DcmtRandomState):
 
-		for r0, r1 in zip(random_sets[0], random_sets[1]):
-			self.assertEqual(r0, r1)
+			rng0 = cls(id=gen_id, seed=seed)
+			rng0.seed(init_seed)
+			rng1 = cls(id=gen_id, seed=seed)
+			rng1.seed(init_seed)
 
-	def testRange(self):
+			randoms0 = getRandomArray(rng0, 10)
+			randoms1 = getRandomArray(rng1, 10)
 
-		for wordlen in (31, 32):
-			mts = create_mts(wordlen=wordlen, seed=99)
-			init_mt(mts[0])
+			self.assert_((randoms0 == randoms1).all())
 
-			r = randraw(mts[0], (64,))
-			self.assert_((r >= 0).all() and (r <= 2**wordlen - 1).all())
+	def testRangeMethod(self):
+		gen_id = 10
+		seed = 100
+		init_seed = 300
+		N = 10
 
+		for cls in (DcmtRandom, DcmtRandomState):
+			rngs = cls.range(3, seed=seed)
 
-class TestStripped(unittest.TestCase):
+			for rng in rngs:
+				rng.seed(init_seed)
 
-	def testValidity(self):
-		"""
-		Check that common parameters are really common,
-		and unique parameters are filled properly
-		"""
+			randoms0 = getRandomArray(rngs[0], N)
+			randoms1 = getRandomArray(rngs[1], N)
+			randoms2 = getRandomArray(rngs[2], N)
 
-		params = dict(start_id=0, max_id=2, seed=123)
-		mts1 = create_mts(**params)
-		mts2_common, mts2_stripped = create_mts_stripped(**params)
+			self.assert_((randoms0 != randoms1).all())
+			self.assert_((randoms0 != randoms2).all())
 
-		for mt1, mt2 in zip(mts1, mts2_stripped):
+	def testRandomsRange(self):
 
-			# check common parameters
-			for field in (x[0] for x in mts2_common._fields_):
-				self.assertEqual(getattr(mt1, field), getattr(mts2_common, field))
+		for cls in (DcmtRandom, DcmtRandomState):
+			for wordlen in (31, 32):
+				rng = cls(wordlen=wordlen, seed=99)
+				rng.seed(999)
 
-			# check unique parameters
-			for field in (x[0] for x in mt2._fields_):
-				if field != 'i':
-					self.assertEqual(getattr(mt1, field), getattr(mt2, field))
+				randoms = getRandomArray(rng, 1000)
 
-
-class TestPyRandom(unittest.TestCase):
-
-	def testCreation(self):
-
-		mts = create_mts(start_id=2, max_id=2, seed=5)
-		init_mt(mts[0], seed=10)
-
-		rng = DcmtRandom(id=2, seed=5)
-		rng.seed(10)
-
-		N  = 16
-		reference = rand(mts[0], N)
-
-		for r in reference:
-			self.assertEqual(r, rng.random())
+				diff_mean, diff_var = testLimits(randoms, 0, 1)
+				self.assert_(diff_mean < 0.05)
+				self.assert_(diff_var < 0.05)
 
 	def testState(self):
 
-		rng = DcmtRandom(id=10, seed=5)
-		rng.seed(20)
+		tests = (
+			(DcmtRandom, 'getstate', 'setstate'),
+			(DcmtRandomState, 'get_state', 'set_state'),
+		)
 
-		state = rng.getstate()
+		for cls, getstate, setstate in tests:
+			rng = cls(seed=55)
+			rng.seed(555)
+			N = 10
 
-		rng2 = DcmtRandom()
-		rng2.setstate(state)
+			state = getattr(rng, getstate)() # getstate/setstate
 
-		for i in xrange(16):
-			r1 = rng.random()
-			r2 = rng2.random()
-			self.assertEqual(r1, r2)
+			rng2 = copy.copy(rng) # copy
+
+			# reference
+			randoms0 = getRandomArray(rng, N)
+
+			getattr(rng, setstate)(state)
+			randoms1 = getRandomArray(rng, N)
+
+			randoms2 = getRandomArray(rng2, N)
+
+			self.assert_((randoms0 == randoms1).all())
+			self.assert_((randoms0 == randoms2).all())
+
+
+class TestRandom(unittest.TestCase):
+
+	def testGetrandbits(self):
+		rng = DcmtRandom(seed=55)
+		rng.seed(555)
+		stop = 2 ** 64
+
+		randoms = numpy.array([float(rng.randrange(0, stop)) for i in xrange(1000)])
+
+		diff_mean, diff_var = testLimits(randoms, 0, stop)
+
+		self.assert_(diff_mean < 0.05)
+		self.assert_(diff_var < 0.05)
+
+
+class TestRandomState(unittest.TestCase):
+
+	def testRand(self):
+
+		shape = (9, 10, 11)
+		rng = DcmtRandomState(seed=900)
+		rng.seed(400)
+
+		randoms = rng.rand(*shape)
+
+		self.assert_(randoms.shape == shape)
+		diff_mean, diff_var = testLimits(randoms, 0, 1)
+		self.assert_(diff_mean < 0.05)
+		self.assert_(diff_var < 0.05)
+
+	def testMtRange(self):
+		start = 0
+		stop = 3
+		seed = 100
+		init_seeds = [4, 5, 6]
+		N = 10
+
+		mt_common, mt_unique = mt_range(start, stop, seed=seed)
+		rngs0 = DcmtRandomState.from_mt_range(mt_common, mt_unique)
+		rngs1 = DcmtRandomState.range(start, stop, seed=seed)
+
+		for rng0, rng1, seed in zip(rngs0, rngs1, init_seeds):
+			rng0.seed(seed)
+			rng1.seed(seed)
+
+		for rng0, rng1 in zip(rngs0, rngs1):
+			randoms0 = getRandomArray(rng0, N)
+			randoms1 = getRandomArray(rng1, N)
+			self.assert_((randoms0 == randoms1).all())
 
 
 if __name__ == '__main__':
 
 	suites = []
 
-	for cls in (TestErrors, TestBasics, TestStripped, TestPyRandom):
+	for cls in (
+			TestErrors,
+			TestBasics,
+			TestRandom,
+			TestRandomState,
+		):
 		suites.append(unittest.TestLoader().loadTestsFromTestCase(cls))
 
 	all_tests = unittest.TestSuite(suites)
