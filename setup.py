@@ -1,15 +1,23 @@
-try:
-    from setuptools import setup, Extension
-except ImportError:
-    from distutils.core import setup, Extension
-
+import os.path
 import sys
 major, minor, _, _, _ = sys.version_info
 if not (major == 2 and minor >= 5):
 	print("Python >=2.5 is required to use this module.")
 	sys.exit(1)
 
-import os.path
+try:
+    from Cython.Distutils import build_ext
+    has_cython = True
+except:
+    has_cython = False
+
+try:
+	from distutils.core import setup, Extension
+except ImportError:
+	from setuptools import setup, Extension
+	# In order to work with Cython, setuptools needs a weird hack involving
+	# fake Pyrex module. I do not really want to do that.
+	has_cython = False
 
 def get_symbol(path, symbol):
 	full_path = os.path.join(setup_dir, *path)
@@ -22,7 +30,6 @@ setup_dir = os.path.split(os.path.abspath(__file__))[0]
 DOCUMENTATION = open(os.path.join(setup_dir, 'README.rst')).read()
 
 VERSION = get_symbol(('dcmt', 'version.py'), 'VERSION_STRING')
-
 
 class NumpyExtension(Extension):
 	# nicked from
@@ -51,31 +58,34 @@ class NumpyExtension(Extension):
 
 	include_dirs = property(get_include_dirs, set_include_dirs, del_include_dirs)
 
-# Being DRY adept and generating header file with C structures
-generate_header = get_symbol(('dcmt', 'structures.py'), 'generate_header')
-header = generate_header()
-with open(os.path.join(setup_dir, 'src', 'wrapper', 'structures.h'), 'w') as f:
-	f.write(header)
 
-libdcmt = NumpyExtension('dcmt._libdcmt',
-	sources = [
-		'src/dcmt/lib/check32.c',
-		'src/dcmt/lib/eqdeg.c',
-		'src/dcmt/lib/genmtrand.c',
-		'src/dcmt/lib/init.c',
-		'src/dcmt/lib/mt19937.c',
-		'src/dcmt/lib/prescr.c',
-		'src/dcmt/lib/seive.c',
+c_sources = [
+	'src/dcmt/lib/check32.c',
+	'src/dcmt/lib/eqdeg.c',
+	'src/dcmt/lib/genmtrand.c',
+	'src/dcmt/lib/init.c',
+	'src/dcmt/lib/mt19937.c',
+	'src/dcmt/lib/prescr.c',
+	'src/dcmt/lib/seive.c',
 
-		'src/wrapper/wrapper.c'
-	],
+	'src/wrapper/common.c',
+]
+
+pyrandom = Extension("dcmt.pyrandom",
 	include_dirs = ['src/dcmt/include', 'src/dcmt/lib'],
-	extra_compile_args = ['-Wall', '-Wmissing-prototypes', '-O3', '-std=c99'])
+	extra_compile_args = ['-Wall', '-Wmissing-prototypes', '-O3', '-std=c99'],
+	sources = c_sources + ['src/wrapper/pyrandom.' + 'pyx' if has_cython else 'c'])
+
+numpyrandom = NumpyExtension("dcmt.numpyrandom",
+	include_dirs = ['src/dcmt/include', 'src/dcmt/lib'],
+	extra_compile_args = ['-Wall', '-Wmissing-prototypes', '-O3', '-std=c99'],
+	sources = c_sources + ['src/wrapper/numpyrandom.' + 'pyx' if has_cython else 'c'])
 
 setup(
 	name='dcmt',
 	packages=['dcmt'],
-	ext_modules=[libdcmt],
+	cmdclass={'build_ext': build_ext} if has_cython else {},
+	ext_modules=[pyrandom, numpyrandom],
 	install_requires=['numpy'],
 	version=VERSION,
 	author='Bogdan Opanchuk',
