@@ -19,41 +19,82 @@ Quick Start
 
 We will start from importing the module:
 
- >>> from dcmt import create_mts, init_mt, randraw
+ >>> from dcmt import DcmtRandom
 
 Creating three independent RNGs with default parameters:
 
- >>> mts = create_mts(start_id=0, max_id=2, seed=777)
+ >>> rngs = DcmtRandom.range(3, seed=777)
 
-If ``seed`` is not specified, the value of ``time(NULL)`` is taken.
+If ``seed`` is not specified, the value from system RNG or timer is taken.
 Now we must initialize each generator:
 
- >>> init_mt(mts[0], seed=1)
- >>> init_mt(mts[1], seed=2)
- >>> init_mt(mts[2], seed=3)
+ >>> rngs[0].seed(1)
+ >>> rngs[1].seed(2)
+ >>> rngs[2].seed(3)
 
-Here seeds can be omitted too, in which case ``time(NULL)`` is used.
-These seeds are independent of the one that was used to create generators.
+Here seeds can be omitted too.
+They are independent from the one that was used to create generators.
 After initialisation every generator is ready to produce random numbers:
 
- >>> randraw(mts[0], 4)
- array([1906178639, 1943589963, 1600596477,  592883390], dtype=uint32)
- >>> randraw(mts[1], 4)
- array([2586093748,  199032518, 4119501648, 3446361745], dtype=uint32)
- >>> randraw(mts[2], 4)
- array([ 992714192, 1771411355, 1256520595,   93513968], dtype=uint32)
- >>> randraw(mts[0], 4)
- array([3727792825,   15188662,  882751098, 1784690177], dtype=uint32)
- >>> randraw(mts[1], 4)
- array([3218870609,  450586145, 2537490204,  189269991], dtype=uint32)
- >>> randraw(mts[2], 4)
- array([2266385156, 2486337585, 1586629291, 2718290559], dtype=uint32)
+ >>> rngs[0].random()
+ 0.23113428363530963
+ >>> rngs[1].random()
+ 0.2925564946366318
+ >>> rngs[2].random()
+ 0.5276839180208412
+ >>> rngs[0].random()
+ 0.3694159212179581
+ >>> rngs[1].random()
+ 0.2539639751553334
+ >>> rngs[2].random()
+ 0.5633233881529953
 
-Every element of ``mts`` sequence can be copied or saved freely,
-in order to keep the state of this RNG.
+RNG objects support pickling and copying, so you can save and restore their states freely.
 
 For further information about generator properties and various pitfalls
 please refer to the `Reference`_ section.
+
+Mersenne twister RNG parameters
+===============================
+
+Before diving into module description it is necessary to clarify the purpose
+of different RNG creation parameters, which can be encountered in various constructors.
+
+* ``wordlen`` specifies the range of integer numbers RNG produces during each step:
+  it is [0, 2 ** ``wordlen``).
+  Larger ranges (like 53-bit float, for example) can be achieved by combining random numbers
+  from several subsequent steps of RNG.
+
+  **Supported values:** 31, 32.
+
+* ``exponent`` corresponds to the period of RNG, which equals to 2 ** ``exponent`` - 1.
+  After this number of steps RNG will start to repeat previously generated sequence.
+
+  **Supported values:** 521, 607, 1279, 2203, 2281, 3217, 4253, 4423, 9689,
+  9941, 11213, 19937, 21701, 23209, 44497.
+
+* ``id`` as a keyword parameter or as an element of range in ``*range`` functions
+  stands for RNG identifier.
+  It can correspond, for example, to processor ID or thread ID in distributed
+  calculations.
+
+  **Supported values:** [0, 65536).
+
+* ``seed``: value for initialising RNGs.
+  Any RNG needs two seeds: one to create RNG itself,
+  and one to initialise its state (the latter is the common usage of term "seed").
+  Along with the parameters described above these two numbers fully specify created RNGs,
+  and subsequent calls to the same functions with the same parameters will produce
+  exactly the same RNG objects.
+  If ``None`` is passed as a seed (which is a default value in all functions),
+  the value of the seed will be taken from system RNG or current time.
+
+  **Supported values:** [0, 2 ** 32) or ``None``.
+
+.. warning:: There is a known bug in the algorithm where it fails to create RNG
+             for ``wordlen=31``, ``exponent=521`` and ``id=9``.
+             The function will throw :py:exc:`~DcmtParameterError` if this ID
+             belongs to the range of requested IDs.
 
 Reference
 =========
@@ -77,86 +118,66 @@ Reference
    This exception is thrown if parameters specified for creation/initialization
    of MT generators are incorrect.
 
-.. function:: create_mts(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None)
+.. class:: DcmtRandom(wordlen=32, exponent=521, id=0, seed=None)
 
-   Creates sequence of generator objects, which are used to produce random numbers.
+   Class, mimicking ``random.Random`` from Python standard library.
+   For the list of available methods see
+   `Python reference <http://docs.python.org/library/random.html>`_.
 
-   :param wordlen: length in bits of integer random numbers RNGs will produce.
-          Can be equal to 31 or 32.
+   For the information on keywords see `Mersenne twister RNG parameters`_.
 
-   :param exponent: Mersenne exponent, corresponding to the period of created RNGs
-          (period will be equal to 2^p-1). Supported values are:
-          521, 607, 1279, 2203, 2281, 3217, 4253, 4423, 9689,
-          9941, 11213, 19937, 21701, 23209, 44497.
+   .. warning:: Unlike Python ``Random``, you must explicitly call ``seed`` method
+                at least once before using any object of this class.
 
-   :param start_id:
-   :param max_id: Range of identifiers for generators. Usually these are
-          node, processor or thread IDs. All identifiers must be between 0 and 65535,
-          and ``start_id`` must be lower than or equal to ``max_id``.
+   .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, seed=None)
 
-   :param seed: seed for randomizing generator parameters.
-          Must be an integer or hashable type; will be truncated to the range [0, 2^32).
-          If not set, system random numbers generator or current time is used.
-          RNGs created with the same ``seed`` and ID are guaranteed to be the same.
+      Analogue of built-in ``range`` which creates a list with :py:class:`DcmtRandom` objects
+      with given parameters and IDs in ``range(start, stop)``.
 
-   :returns: sequence of generator objects, which should be considered opaque
-             (changing their internal data can lead to undefined consequences
-             up to the crash of the whole script).
-             These objects can be copied, saved and reused freely.
+      .. note:: The result of this function is not identical to several calls to
+                :py:class:`DcmtRandom` constructor,
+                since this function specifically aims at creating
+                independent RNGs with given range of IDs.
 
-   .. note:: If function fails to create RNG for one of the IDs, it stops and
-             returns already created RNGs.
-             If it failed to create the first RNG in sequence,
-             :py:exc:`~DcmtError` is raised.
+.. class:: DcmtRandomState(wordlen=32, exponent=521, id=0, seed=None)
 
-   .. warning:: There is a known bug in the algorithm, when it fails to create RNG
-                for ``wordlen=31``, ``exponent=521`` and ``ID=9``.
-                The function will throw :py:exc:`~DcmtParameterError` if this ID
-                belongs to the range of given IDs.
+   Class, partially mimicking `numpy.random.RandomState <http://docs.scipy.org/doc/numpy/reference/generated/numpy.random.mtrand.RandomState.html>`_.
+   Currently supported: ``rand``, ``get_state`` and ``set_state`` methods
+   along with pickling/copying support (which is missing in ``numpy`` class).
 
-.. function:: create_mts_stripped(wordlen=32, exponent=521, start_id=0, max_id=0, seed=None)
+   For the information on keywords see `Mersenne twister RNG parameters`_.
 
-   Takes the same parameters as :py:func:`~create_mts`, but returns optimized structures
-   with no repeating elements.
+   .. warning:: Unlike Python ``Random``, you must explicitly call ``seed`` method
+                at least once before using any object of this class.
 
-   :returns: tuple with two elements: ``ctypes`` structure with repeating RNG parameters
-             and array of ``ctypes`` structures with parameters unique for each RNG.
+   .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, seed=None)
 
-   .. note:: This function has the same behavior as :py:func:`~create_mts` (see note).
+      Analogue of built-in ``range`` which creates a list with :py:class:`DcmtRandomState` objects
+      with given parameters and IDs in ``range(start, stop)``.
 
-   .. warning:: If you are using these structures, make sure you know what you are doing.
+      .. note:: The result of this function is not identical to several calls to
+                :py:class:`DcmtRandomState` constructor,
+                since this function specifically aims at creating
+                independent RNGs with given range of IDs.
 
-.. function:: init_mt(mt, seed=None)
+   .. py:classmethod:: from_mt_range(mt_common, mt_unique)
 
-   Initializes generator state with given seed.
+      Creates list of :py:class:`DcmtRandomState` objects from the result of
+      :py:func:`mt_range` function.
 
-   :param mt: one of generator objects, created with :py:func:`~create_mts`.
+.. function:: mt_range([start], stop, wordlen=32, exponent=521, seed=None)
 
-   :param seed: seed for randomizing generator state.
-          Requirements are the same as in :py:func:`~create_mts`.
+   Creates optimized RNG data with no repeating elements.
 
-.. function:: randraw(mt, *shape)
+   :returns: tuple with two elements: dictionary with common parameters for all RNGs,
+             and ``numpy`` array with parameters unique for each generator.
 
-   Produces ``numpy`` array filled with random integer numbers;
-   range depends on ``wordlen`` parameter specified during RNG creation with
-   :py:func:`~create_mts`.
+   .. note:: This function uses the same creation algorithm as :py:meth:`DcmtRandomState.range`
+             and :py:meth:`DcmtRandom.range`.
 
-   :param mt: one of generator objects, created with :py:func:`~create_mts`
-          and initialized with :py:func:`~init_mt` at least once.
-
-   :param shape: shape of resulting array.
-
-   :returns: ``numpy`` array of type ``numpy.uint32`` with shape ``shape``
-             filled with random numbers in range [0, 2^wordlen-1].
-
-.. function:: rand(mt, *shape)
-
-   Produces ``numpy`` array filled with random floating-point numbers.
-
-   :param mt: one of generator objects, created with :py:func:`~create_mts`
-          and initialized with :py:func:`~init_mt` at least once.
-
-   :param shape: shape of resulting array.
-
-   :returns: ``numpy`` array of type ``numpy.float64`` with shape ``shape``
-             filled with random numbers in range [0, 1).
+   .. note:: This function is intended for usage in MT implementations on GPU,
+             so the array with unique parameters contains RNG index, which,
+             technically, is intialised only after the call to RNG ``seed()`` method.
+             The addition of this parameter allows one to employ the returned continous buffer
+             in random number generation without rearranging its elements
+             (and, as a bonus, makes entries for separate RNGs 16 bytes long).
