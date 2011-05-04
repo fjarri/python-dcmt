@@ -88,7 +88,7 @@ cdef void validate_parameters(wordlen, exponent, start_id, max_id,
 		raise DcmtParameterError("All IDs must lie between 0 and 65535")
 
 	if w == 31 and p == 521 and sid <= 9 and mid >= 9:
-		raise DcmtParameterError("Known bug: cannot create generator for wordlen=31, exponent=521, id=9")
+		raise DcmtParameterError("Known bug: cannot create RNG for wordlen=31, exponent=521, id=9")
 
 	if w != 31 and w != 32:
 		raise DcmtParameterError("Word length must be equal to 31 or 32")
