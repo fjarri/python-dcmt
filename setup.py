@@ -86,6 +86,7 @@ setup(
 	packages=['dcmt'],
 	cmdclass={'build_ext': build_ext} if has_cython else {},
 	ext_modules=[pyrandom, numpyrandom],
+	requires=['numpy'],
 	install_requires=['numpy'],
 	version=VERSION,
 	author='Bogdan Opanchuk',
