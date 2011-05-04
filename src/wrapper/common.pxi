@@ -51,18 +51,8 @@ cdef get_mt_struct_fields(mt_struct *mt):
 	}
 
 cdef set_mt_struct_fields(mt_struct *mt, mt_dict):
+	set_mt_struct_common_fields(mt, mt_dict)
 	mt.aaa = <uint32_t>mt_dict['aaa']
-	mt.mm = <int>mt_dict['mm']
-	mt.nn = <int>mt_dict['nn']
-	mt.rr = <int>mt_dict['rr']
-	mt.ww = <int>mt_dict['ww']
-	mt.wmask = <uint32_t>mt_dict['wmask']
-	mt.umask = <uint32_t>mt_dict['umask']
-	mt.lmask = <uint32_t>mt_dict['lmask']
-	mt.shift0 = <int>mt_dict['shift0']
-	mt.shift1 = <int>mt_dict['shift1']
-	mt.shiftB = <int>mt_dict['shiftB']
-	mt.shiftC = <int>mt_dict['shiftC']
 	mt.maskB = <uint32_t>mt_dict['maskB']
 	mt.maskC = <uint32_t>mt_dict['maskC']
 	mt.i = <int>mt_dict['i']
