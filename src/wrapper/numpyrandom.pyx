@@ -58,6 +58,47 @@ cdef extern from "numpy/arrayobject.h":
 import_array()
 
 
+# FIXME: on 32-bit systems taking int(uint32_t) is incorrect
+cdef get_mt_struct_fields(mt_struct *mt):
+	return {
+		'aaa': int(mt.aaa),
+		'mm': int(mt.mm),
+		'nn': int(mt.nn),
+		'rr': int(mt.rr),
+		'ww': int(mt.ww),
+		'wmask': int(mt.wmask),
+		'umask': int(mt.umask),
+		'lmask': int(mt.lmask),
+		'shift0': int(mt.shift0),
+		'shift1': int(mt.shift1),
+		'shiftB': int(mt.shiftB),
+		'shiftC': int(mt.shiftC),
+		'maskB': int(mt.maskB),
+		'maskC': int(mt.maskC),
+		'i': int(mt.i)
+	}
+
+cdef set_mt_struct_fields(mt_struct *mt, mt_dict):
+	set_mt_struct_common_fields(mt, mt_dict)
+	mt.aaa = <uint32_t>mt_dict['aaa']
+	mt.maskB = <uint32_t>mt_dict['maskB']
+	mt.maskC = <uint32_t>mt_dict['maskC']
+	mt.i = <int>mt_dict['i']
+
+cdef set_mt_struct_common_fields(mt_struct *mt, common_mt_dict):
+	mt.mm = <int>common_mt_dict['mm']
+	mt.nn = <int>common_mt_dict['nn']
+	mt.rr = <int>common_mt_dict['rr']
+	mt.ww = <int>common_mt_dict['ww']
+	mt.wmask = <uint32_t>common_mt_dict['wmask']
+	mt.umask = <uint32_t>common_mt_dict['umask']
+	mt.lmask = <uint32_t>common_mt_dict['lmask']
+	mt.shift0 = <int>common_mt_dict['shift0']
+	mt.shift1 = <int>common_mt_dict['shift1']
+	mt.shiftB = <int>common_mt_dict['shiftB']
+	mt.shiftC = <int>common_mt_dict['shiftC']
+
+
 cdef class DcmtRandomState:
 
 	cdef mt_struct *mt
