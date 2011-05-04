@@ -88,6 +88,9 @@ of different RNG creation parameters, which can be encountered in various constr
   exactly the same RNG objects.
   If ``None`` is passed as a seed (which is a default value in all functions),
   the value of the seed will be taken from system RNG or current time.
+  If ``int`` or ``long`` is passed, their lowest 4 bytes are taken;
+  if the passed object is hashable, the lowest 4 bytes of its hash value are taken;
+  otherwise ``DcmtParameterError`` is thrown.
 
   **Supported values:** [0, 2 ** 32) or ``None``.
 
