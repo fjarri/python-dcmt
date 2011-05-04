@@ -108,7 +108,7 @@ cdef object create_mt_range(args, wordlen, exponent, seed, mt_struct ***mts, int
 
 	if len(args) == 1:
 		start_id = 0
-		max_id, = args[0]
+		max_id, = args
 	elif len(args) == 2:
 		start_id, max_id = args
 	else:
