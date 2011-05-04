@@ -15,7 +15,7 @@ cdef class RandomContainer:
 	cdef void initWithStruct(self, mt_struct *mt):
 		self.mt = mt
 
-	cdef void initWithParams(self, int wordlen, int exponent, int id, int seed) except *:
+	cdef void initWithParams(self, int wordlen, int exponent, int id, uint32_t seed) except *:
 		self.mt = get_mt_parameter_id_st(wordlen, exponent, id, seed)
 		if self.mt == NULL:
 			raise DcmtError("Failed to create RNG")
