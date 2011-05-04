@@ -180,28 +180,12 @@ cdef class DcmtRandomState:
 
 	@classmethod
 	def range(cls, *args, wordlen=32, exponent=521, seed=None):
-		cdef int w, p, mid, sid
+		cdef int i, count
+		cdef mt_struct **mts = NULL
 
-		if len(args) == 1:
-			start_id = 0
-			max_id = args[0] - 1
-		elif len(args) == 2:
-			start_id = args[0]
-			max_id = args[1] - 1
-		else:
-			raise TypeError("range expected 1 or 2 positional arguments")
-
-		if max_id < start_id:
-			return []
-
-		validate_parameters(wordlen, exponent, start_id, max_id, &w, &p, &sid, &mid)
-		cdef uint32_t s = get_seed(seed)
-
-		cdef int count, i
-		cdef mt_struct **mts = get_mt_parameters_st(w, p, sid, mid, s, &count)
-
-		if count < mid - sid + 1 or mts == NULL:
-			raise DcmtError("dcmt internal error: could not create all requested RNGs")
+		res = create_mt_range(args, wordlen, exponent, seed, &mts, &count)
+		if res != None:
+			return res
 
 		cdef DcmtRandomState rng
 		rngs = []
@@ -250,35 +234,18 @@ cdef class DcmtRandomState:
 
 def mt_range(*args, wordlen=32, exponent=521, seed=None):
 
-	cdef int w, p, mid, sid
+	cdef int i, count
+	cdef mt_struct **mts = NULL
 
-	if len(args) == 1:
-		start_id = 0
-		max_id = args[0] - 1
-	elif len(args) == 2:
-		start_id = args[0]
-		max_id = args[1] - 1
-	else:
-		raise TypeError("mt_range expected 1 or 2 positional arguments")
-
-	if max_id < start_id:
-		return []
-
-	validate_parameters(wordlen, exponent, start_id, max_id, &w, &p, &mid, &sid)
-	cdef uint32_t s = get_seed(seed)
-
-	cdef int count
-	cdef mt_struct **mts = get_mt_parameters_st(w, p, sid, mid, s, &count)
-
-	if count < mid - sid + 1 or mts == NULL:
-		raise DcmtError("dcmt internal error: could not create all requested RNGs")
+	res = create_mt_range(args, wordlen, exponent, seed, &mts, &count)
+	if res != None:
+		return res
 
 	common_fields = get_mt_struct_fields(mts[0])
 
 	cdef ndarray unique_fields "arrayObject_unique"
 	unique_fields = <ndarray>numpy.empty((count, 4), numpy.uint32)
 
-	cdef int i
 	cdef uint32_t *data = <uint32_t *>unique_fields.data
 	for i in range(count):
 		data[i * 4 + 0] = mts[i].aaa

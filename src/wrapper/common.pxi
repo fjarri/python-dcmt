@@ -101,3 +101,34 @@ cdef void validate_parameters(wordlen, exponent, start_id, max_id,
 	c_exponent[0] = p
 	c_start_id[0] = sid
 	c_max_id[0] = mid
+
+cdef object create_mt_range(args, wordlen, exponent, seed, mt_struct ***mts, int *count):
+
+	cdef int w, p, mid, sid
+
+	if len(args) == 1:
+		start_id = 0
+		max_id, = args[0]
+	elif len(args) == 2:
+		start_id, max_id = args
+	else:
+		raise TypeError("range expected 1 or 2 positional arguments")
+
+	max_id -= 1
+
+	if max_id < start_id:
+		return []
+
+	validate_parameters(wordlen, exponent, start_id, max_id, &w, &p, &sid, &mid)
+	cdef uint32_t s = get_seed(seed)
+
+	cdef mt_struct **m = get_mt_parameters_st(w, p, sid, mid, s, count)
+
+	if count[0] < max_id - start_id + 1 or mts == NULL:
+		if mts != NULL:
+			free_mt_struct_array(m, count[0])
+		raise DcmtError("dcmt internal error: could not create all requested RNGs")
+
+	mts[0] = m
+
+	return None
