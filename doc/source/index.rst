@@ -23,10 +23,11 @@ We will start from importing the module:
 
 Creating three independent RNGs with default parameters:
 
- >>> rngs = DcmtRandom.range(3, seed=777)
+ >>> rngs = DcmtRandom.range(3, gen_seed=777)
 
 If ``seed`` is not specified, the value from system RNG or timer is taken.
-Now we must initialize each generator:
+Now we may explicitly initialize each generator
+(although they are initialised with random seed by default):
 
  >>> rngs[0].seed(1)
  >>> rngs[1].seed(2)
@@ -80,7 +81,7 @@ of different RNG creation parameters, which can be encountered in various constr
 
   **Supported values:** [0, 65536).
 
-* ``seed``: value for initialising RNGs.
+* ``seed``, ``gen_seed``: values for initialising RNGs.
   Any RNG needs two seeds: one to create RNG itself,
   and one to initialise its state (the latter is the common usage of term "seed").
   Along with the parameters described above these two numbers fully specify created RNGs,
@@ -121,7 +122,7 @@ Reference
    This exception is thrown if parameters specified for creation/initialization
    of MT generators are incorrect.
 
-.. class:: DcmtRandom(wordlen=32, exponent=521, id=0, seed=None)
+.. class:: DcmtRandom([seed], wordlen=32, exponent=521, id=0, gen_seed=None)
 
    Class, mimicking ``random.Random`` from Python standard library.
    For the list of available methods see
@@ -142,7 +143,7 @@ Reference
                 since this function specifically aims at creating
                 independent RNGs with given range of IDs.
 
-.. class:: DcmtRandomState(wordlen=32, exponent=521, id=0, seed=None)
+.. class:: DcmtRandomState([seed], wordlen=32, exponent=521, id=0, gen_seed=None)
 
    Class, partially mimicking `numpy.random.RandomState <http://docs.scipy.org/doc/numpy/reference/generated/numpy.random.mtrand.RandomState.html>`_.
    Currently supported: ``rand``, ``get_state`` and ``set_state`` methods
@@ -153,7 +154,7 @@ Reference
    .. warning:: Unlike Python ``Random``, you must explicitly call ``seed`` method
                 at least once before using any object of this class.
 
-   .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, seed=None)
+   .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, gen_seed=None)
 
       Analogue of built-in ``range`` which creates a list with :py:class:`DcmtRandomState` objects
       with given parameters and IDs in ``range(start, stop)``.
@@ -168,7 +169,7 @@ Reference
       Creates list of :py:class:`DcmtRandomState` objects from the result of
       :py:func:`mt_range` function.
 
-.. function:: mt_range([start], stop, wordlen=32, exponent=521, seed=None)
+.. function:: mt_range([start], stop, wordlen=32, exponent=521, gen_seed=None)
 
    Creates optimized RNG data with no repeating elements.
 
