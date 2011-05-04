@@ -1,4 +1,5 @@
 from libc.stdlib cimport malloc, free
+from libc.limits cimport INT_MAX
 
 cdef extern from "string.h":
 	void *memcpy(void *s1, void *s2, int n)
@@ -8,6 +9,8 @@ cdef extern from "Python.h":
 	void PyMem_Free(void *buf)
 	object _PyLong_FromByteArray(unsigned char* bytes, size_t n, int little_endian, int is_signed)
 	unsigned long PyInt_AsUnsignedLongMask(object io)
+	object PyInt_FromLong(long ival)
+	object PyLong_FromUnsignedLong(unsigned long v)
 
 cdef extern from "inttypes.h":
 	ctypedef unsigned int uint32_t

@@ -57,42 +57,49 @@ cdef extern from "numpy/arrayobject.h":
 # Initialize numpy
 import_array()
 
+cdef object uint32_to_python(uint32_t x):
+	if x > 0x7FFFFFFF and INT_MAX < 0xFFFFFFFF:
+		return PyLong_FromUnsignedLong(x)
+	else:
+		return PyInt_FromLong(x)
 
-# FIXME: on 32-bit systems taking int(uint32_t) is incorrect
+cdef uint32_t uint32_from_python(object x):
+	return PyInt_AsUnsignedLongMask(x)
+
 cdef get_mt_struct_fields(mt_struct *mt):
 	return {
-		'aaa': int(mt.aaa),
+		'aaa': uint32_to_python(mt.aaa),
 		'mm': int(mt.mm),
 		'nn': int(mt.nn),
 		'rr': int(mt.rr),
 		'ww': int(mt.ww),
-		'wmask': int(mt.wmask),
-		'umask': int(mt.umask),
-		'lmask': int(mt.lmask),
+		'wmask': uint32_to_python(mt.wmask),
+		'umask': uint32_to_python(mt.umask),
+		'lmask': uint32_to_python(mt.lmask),
 		'shift0': int(mt.shift0),
 		'shift1': int(mt.shift1),
 		'shiftB': int(mt.shiftB),
 		'shiftC': int(mt.shiftC),
-		'maskB': int(mt.maskB),
-		'maskC': int(mt.maskC),
+		'maskB': uint32_to_python(mt.maskB),
+		'maskC': uint32_to_python(mt.maskC),
 		'i': int(mt.i)
 	}
 
 cdef set_mt_struct_fields(mt_struct *mt, mt_dict):
 	set_mt_struct_common_fields(mt, mt_dict)
-	mt.aaa = <uint32_t>mt_dict['aaa']
-	mt.maskB = <uint32_t>mt_dict['maskB']
-	mt.maskC = <uint32_t>mt_dict['maskC']
-	mt.i = <int>mt_dict['i']
+	mt.aaa = uint32_from_python(mt_dict['aaa'])
+	mt.maskB = uint32_from_python(mt_dict['maskB'])
+	mt.maskC = uint32_from_python(mt_dict['maskC'])
+	mt.i = uint32_from_python(mt_dict['i'])
 
 cdef set_mt_struct_common_fields(mt_struct *mt, common_mt_dict):
 	mt.mm = <int>common_mt_dict['mm']
 	mt.nn = <int>common_mt_dict['nn']
 	mt.rr = <int>common_mt_dict['rr']
 	mt.ww = <int>common_mt_dict['ww']
-	mt.wmask = <uint32_t>common_mt_dict['wmask']
-	mt.umask = <uint32_t>common_mt_dict['umask']
-	mt.lmask = <uint32_t>common_mt_dict['lmask']
+	mt.wmask = uint32_from_python(common_mt_dict['wmask'])
+	mt.umask = uint32_from_python(common_mt_dict['umask'])
+	mt.lmask = uint32_from_python(common_mt_dict['lmask'])
 	mt.shift0 = <int>common_mt_dict['shift0']
 	mt.shift1 = <int>common_mt_dict['shift1']
 	mt.shiftB = <int>common_mt_dict['shiftB']
