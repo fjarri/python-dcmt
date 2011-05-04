@@ -13,8 +13,15 @@ Changelog
 =========
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
-0.6.1-3 (in development)
+0.6.1-4 (in development)
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix issues with setuptools/distutils (one of them does not support Cython,
+  other does not support Sphinx)
+
+~~~~~~~
+0.6.1-3
+~~~~~~~
 
 * Using slightly optimized random number generation taken from ``numpy`` 1.5.1;
 * Module is rewritten using Cython;
