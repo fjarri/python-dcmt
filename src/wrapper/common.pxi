@@ -7,6 +7,7 @@ cdef extern from "Python.h":
 	void *PyMem_Malloc(size_t size)
 	void PyMem_Free(void *buf)
 	object _PyLong_FromByteArray(unsigned char* bytes, size_t n, int little_endian, int is_signed)
+	unsigned long PyInt_AsUnsignedLongMask(object io)
 
 cdef extern from "inttypes.h":
 	ctypedef unsigned int uint32_t
@@ -96,16 +97,14 @@ cdef uint32_t get_seed(object seed) except? -1:
 			seed = long(_hexlify(_urandom(16)), 16)
 		except NotImplementedError:
 			seed = long(time.time() * 256) # use fractional seconds
-
-	if type(seed) not in (int, long):
+	elif not isinstance(seed, int) and not isinstance(seed, long):
 		try:
 			seed = hash(seed)
 		except TypeError:
 			raise DcmtParameterError("Seed must be an integer or hashable type")
 
-	return seed & 0xFFFFFFFF
-
-	return seed
+	# not checking for overflow now, since we need 4 lower bytes anyway
+	return PyInt_AsUnsignedLongMask(seed)
 
 def validate_parameters(wordlen, exponent, start_id, max_id):
 	"""Return valid parameter or raise an exception"""
