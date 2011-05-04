@@ -124,15 +124,17 @@ cdef class RandomContainer:
 
 class DcmtRandom(Random):
 
-	def __init__(self, wordlen=32, exponent=521, id=0, seed=None):
+	def __init__(self, *args, wordlen=32, exponent=521, id=0, gen_seed=None):
 		cdef int w, p, mid, sid
-		cdef uint32_t s = get_seed(seed)
+		cdef uint32_t s = get_seed(gen_seed)
 
 		validate_parameters(wordlen, exponent, id, id, &w, &p, &sid, &mid)
 
 		cdef RandomContainer rc = <RandomContainer>RandomContainer()
 		rc.initWithParams(w, p, sid, s)
 		self.rc = rc
+
+		self.seed(*args)
 
 	def seed(self, a=None):
 		cdef uint32_t seed = get_seed(a)
@@ -164,12 +166,12 @@ class DcmtRandom(Random):
 		rc.jumpahead(n)
 
 	@classmethod
-	def range(cls, *args, wordlen=32, exponent=521, seed=None):
+	def range(cls, *args, wordlen=32, exponent=521, gen_seed=None):
 
 		cdef int i, count
 		cdef mt_struct **mts = NULL
 
-		res = create_mt_range(args, wordlen, exponent, seed, &mts, &count)
+		res = create_mt_range(args, wordlen, exponent, gen_seed, &mts, &count)
 		if res != None:
 			return res
 
@@ -181,6 +183,7 @@ class DcmtRandom(Random):
 
 			rng = cls.__new__(cls)
 			cls.rc = rc
+			rng.seed()
 
 			rngs.append(rng)
 

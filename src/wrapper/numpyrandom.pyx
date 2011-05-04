@@ -110,12 +110,13 @@ cdef class DcmtRandomState:
 
 	cdef mt_struct *mt
 
-	def __init__(self, wordlen=32, exponent=521, id=0, seed=None):
+	def __init__(self, *args, wordlen=32, exponent=521, id=0, gen_seed=None):
 		cdef int w, p, mid, sid
 		validate_parameters(wordlen, exponent, id, id, &w, &p, &sid, &mid)
-		seed = get_seed(seed)
+		cdef uint32_t s = get_seed(gen_seed)
 
-		self.mt = get_mt_parameter_id_st(w, p, sid, seed)
+		self.mt = get_mt_parameter_id_st(w, p, sid, s)
+		self.seed(*args)
 
 	def __dealloc__(self):
 		if self.mt != NULL:
@@ -179,11 +180,11 @@ cdef class DcmtRandomState:
 			return array
 
 	@classmethod
-	def range(cls, *args, wordlen=32, exponent=521, seed=None):
+	def range(cls, *args, wordlen=32, exponent=521, gen_seed=None):
 		cdef int i, count
 		cdef mt_struct **mts = NULL
 
-		res = create_mt_range(args, wordlen, exponent, seed, &mts, &count)
+		res = create_mt_range(args, wordlen, exponent, gen_seed, &mts, &count)
 		if res != None:
 			return res
 
@@ -192,6 +193,7 @@ cdef class DcmtRandomState:
 		for i in range(count):
 			rng = <DcmtRandomState>cls.__new__(cls)
 			rng.mt = mts[i]
+			rng.seed()
 
 			rngs.append(rng)
 
@@ -226,18 +228,19 @@ cdef class DcmtRandomState:
 			mt.state = <uint32_t *>malloc(sizeof(uint32_t) * mt.nn)
 
 			rng.mt = mt
+			rng.seed()
 
 			rngs.append(rng)
 
 		return rngs
 
 
-def mt_range(*args, wordlen=32, exponent=521, seed=None):
+def mt_range(*args, wordlen=32, exponent=521, gen_seed=None):
 
 	cdef int i, count
 	cdef mt_struct **mts = NULL
 
-	res = create_mt_range(args, wordlen, exponent, seed, &mts, &count)
+	res = create_mt_range(args, wordlen, exponent, gen_seed, &mts, &count)
 	if res != None:
 		return res
 
