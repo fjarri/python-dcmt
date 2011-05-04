@@ -12,4 +12,6 @@ include src/dcmt/README
 include src/dcmt/README.jp
 include src/dcmt/CHANGELOG
 include src/dcmt/VERSION
+include src/wrapper/*.c
+include src/wrapper/*.pyx
 
