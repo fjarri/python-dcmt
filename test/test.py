@@ -157,6 +157,30 @@ class TestErrors(unittest.TestCase):
 					rng = get_rng(func(*args, gen_seed=1))
 					self.assertRaises(DcmtParameterError, rng.seed, seed)
 
+	def testDefaultSeed(self):
+		"""Check that RNG is useable even if seed was not set explicitly"""
+
+		ids = (1,)
+		tests = (
+			(DcmtRandom, (), lambda x: x),
+			(DcmtRandom.range, ids, lambda x: x[0]),
+			(DcmtRandomState, (), lambda x: x),
+			(DcmtRandomState.range, ids, lambda x: x[0]),
+			(mt_range, ids, lambda x: DcmtRandomState.from_mt_range(*x)[0])
+		)
+
+		for func, args, get_rng in tests:
+			rng = get_rng(func(*args, gen_seed=1))
+			getRandomArray(rng, 10)
+
+	def testPositionalSeed(self):
+		"""Check that initializing seed can be given as a positional argument"""
+		tests = (DcmtRandom, DcmtRandomState)
+
+		for cls in tests:
+			rng = cls(1, gen_seed=2)
+			getRandomArray(rng, 10)
+
 
 class TestBasics(unittest.TestCase):
 
