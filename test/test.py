@@ -39,12 +39,12 @@ class TestErrors(unittest.TestCase):
 
 			# correct
 			for wordlen in (31, 32):
-				kwds = dict(wordlen=wordlen, seed=1)
+				kwds = dict(wordlen=wordlen, gen_seed=1)
 				func(*args, **kwds)
 
 			# incorrect
 			for wordlen in (16, 64):
-				kwds = dict(wordlen=wordlen, seed=1)
+				kwds = dict(wordlen=wordlen, gen_seed=1)
 				self.assertRaises(DcmtParameterError, func, *args, **kwds)
 
 	def testExponent(self):
@@ -69,22 +69,22 @@ class TestErrors(unittest.TestCase):
 
 			# correct
 			for exponent in correct_exponents_reduced:
-				kwds = dict(exponent=exponent, seed=1)
+				kwds = dict(exponent=exponent, gen_seed=1)
 				func(*args, **kwds)
 
 			# incorrect
 			for exponent in (500, 1000, 50000):
-				kwds = dict(exponent=exponent, seed=1)
+				kwds = dict(exponent=exponent, gen_seed=1)
 				self.assertRaises(DcmtParameterError, func, *args, **kwds)
 
 	def testId(self):
 
 		# valid calls
-		DcmtRandom(id=20, seed=1)
-		DcmtRandom.range(1, 4, seed=1)
-		DcmtRandomState(id=3000, seed=1)
-		DcmtRandomState.range(100, 103, seed=1)
-		mt_range(4, seed=1)
+		DcmtRandom(id=20, gen_seed=1)
+		DcmtRandom.range(1, 4, gen_seed=1)
+		DcmtRandomState(id=3000, gen_seed=1)
+		DcmtRandomState.range(100, 103, gen_seed=1)
+		mt_range(4, gen_seed=1)
 
 		# check that range functions behave like Python range()
 		for func in (DcmtRandom.range, DcmtRandomState.range, mt_range):
@@ -94,23 +94,23 @@ class TestErrors(unittest.TestCase):
 			self.assertEqual(func(3, 1), [])
 
 		# error: id < 0
-		self.assertRaises(DcmtParameterError, DcmtRandom, id=-1, seed=1)
-		self.assertRaises(DcmtParameterError, DcmtRandom.range, -1, 3, seed=1)
-		self.assertRaises(DcmtParameterError, DcmtRandomState, id=-1, seed=1)
-		self.assertRaises(DcmtParameterError, DcmtRandomState.range, -1, 2, seed=1)
-		self.assertRaises(DcmtParameterError, mt_range, -1, 3, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom, id=-1, gen_seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom.range, -1, 3, gen_seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState, id=-1, gen_seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState.range, -1, 2, gen_seed=1)
+		self.assertRaises(DcmtParameterError, mt_range, -1, 3, gen_seed=1)
 
 		# error: id > 65535
-		self.assertRaises(DcmtParameterError, DcmtRandom, id=65536, seed=1)
-		self.assertRaises(DcmtParameterError, DcmtRandom.range, 65535, 65537, seed=1)
-		self.assertRaises(DcmtParameterError, DcmtRandomState, id=65536, seed=1)
-		self.assertRaises(DcmtParameterError, DcmtRandomState.range, 65535, 65537, seed=1)
-		self.assertRaises(DcmtParameterError, mt_range, 65534, 65539, seed=1)
-		self.assertRaises(DcmtParameterError, mt_range, 65536, 65539, seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom, id=65536, gen_seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandom.range, 65535, 65537, gen_seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState, id=65536, gen_seed=1)
+		self.assertRaises(DcmtParameterError, DcmtRandomState.range, 65535, 65537, gen_seed=1)
+		self.assertRaises(DcmtParameterError, mt_range, 65534, 65539, gen_seed=1)
+		self.assertRaises(DcmtParameterError, mt_range, 65536, 65539, gen_seed=1)
 
 	def testBugId9(self):
 
-		kwds = dict(wordlen=31, exponent=521, seed=1)
+		kwds = dict(wordlen=31, exponent=521, gen_seed=1)
 
 		# known bug: cannot find generator for wordlen=31, exponent=521 and id=9
 		self.assertRaises(DcmtParameterError, DcmtRandom, id=9, **kwds)
@@ -144,17 +144,17 @@ class TestErrors(unittest.TestCase):
 
 			# correct seeds
 			for seed in correct_seeds:
-				rng = func(*args, seed=seed)
+				rng = func(*args, gen_seed=seed)
 
 				if get_rng is not None:
 					get_rng(rng).seed(seed)
 
 			# incorrect seeds
 			for seed in incorrect_seeds:
-				self.assertRaises(DcmtParameterError, func, *args, seed=seed)
+				self.assertRaises(DcmtParameterError, func, *args, gen_seed=seed)
 
 				if get_rng is not None:
-					rng = get_rng(func(*args, seed=1))
+					rng = get_rng(func(*args, gen_seed=1))
 					self.assertRaises(DcmtParameterError, rng.seed, seed)
 
 
@@ -164,7 +164,7 @@ class TestBasics(unittest.TestCase):
 
 		for cls in (DcmtRandom, DcmtRandomState):
 
-			rngs = cls.range(2, seed=10)
+			rngs = cls.range(2, gen_seed=10)
 			rngs[0].seed(2)
 			rngs[1].seed(2)
 
@@ -181,9 +181,9 @@ class TestBasics(unittest.TestCase):
 
 		for cls in (DcmtRandom, DcmtRandomState):
 
-			rng0 = cls(id=gen_id, seed=seed)
+			rng0 = cls(id=gen_id, gen_seed=seed)
 			rng0.seed(init_seed)
-			rng1 = cls(id=gen_id, seed=seed)
+			rng1 = cls(id=gen_id, gen_seed=seed)
 			rng1.seed(init_seed)
 
 			randoms0 = getRandomArray(rng0, 10)
@@ -198,7 +198,7 @@ class TestBasics(unittest.TestCase):
 		N = 10
 
 		for cls in (DcmtRandom, DcmtRandomState):
-			rngs = cls.range(3, seed=seed)
+			rngs = cls.range(3, gen_seed=seed)
 
 			for rng in rngs:
 				rng.seed(init_seed)
@@ -214,7 +214,7 @@ class TestBasics(unittest.TestCase):
 
 		for cls in (DcmtRandom, DcmtRandomState):
 			for wordlen in (31, 32):
-				rng = cls(wordlen=wordlen, seed=99)
+				rng = cls(wordlen=wordlen, gen_seed=99)
 				rng.seed(999)
 
 				randoms = getRandomArray(rng, 1000)
@@ -231,7 +231,7 @@ class TestBasics(unittest.TestCase):
 		)
 
 		for cls, getstate, setstate in tests:
-			rng = cls(seed=55)
+			rng = cls(gen_seed=55)
 			rng.seed(555)
 			N = 10
 
@@ -254,7 +254,7 @@ class TestBasics(unittest.TestCase):
 class TestRandom(unittest.TestCase):
 
 	def testGetrandbits(self):
-		rng = DcmtRandom(seed=55)
+		rng = DcmtRandom(gen_seed=55)
 		rng.seed(555)
 		stop = 2 ** 64
 
@@ -271,7 +271,7 @@ class TestRandomState(unittest.TestCase):
 	def testRand(self):
 
 		shape = (9, 10, 11)
-		rng = DcmtRandomState(seed=900)
+		rng = DcmtRandomState(gen_seed=900)
 		rng.seed(400)
 
 		randoms = rng.rand(*shape)
@@ -288,9 +288,9 @@ class TestRandomState(unittest.TestCase):
 		init_seeds = [4, 5, 6]
 		N = 10
 
-		mt_common, mt_unique = mt_range(start, stop, seed=seed)
+		mt_common, mt_unique = mt_range(start, stop, gen_seed=seed)
 		rngs0 = DcmtRandomState.from_mt_range(mt_common, mt_unique)
-		rngs1 = DcmtRandomState.range(start, stop, seed=seed)
+		rngs1 = DcmtRandomState.range(start, stop, gen_seed=seed)
 
 		for rng0, rng1, seed in zip(rngs0, rngs1, init_seeds):
 			rng0.seed(seed)
