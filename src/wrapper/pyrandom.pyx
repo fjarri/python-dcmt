@@ -179,7 +179,7 @@ class DcmtRandom(Random):
 			rc.initWithStruct(mts[i])
 
 			rng = cls.__new__(cls)
-			cls.mt = rc
+			cls.rc = rc
 
 			rngs.append(rng)
 
