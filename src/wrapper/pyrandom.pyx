@@ -130,8 +130,9 @@ class DcmtRandom(Random):
 
 		validate_parameters(wordlen, exponent, id, id, &w, &p, &sid, &mid)
 
-		self.rc = <RandomContainer>RandomContainer()
-		self.rc.initWithParams(w, p, sid, s)
+		cdef RandomContainer rc = <RandomContainer>RandomContainer()
+		rc.initWithParams(w, p, sid, s)
+		self.rc = rc
 
 	def seed(self, a=None):
 		cdef uint32_t seed = get_seed(a)
