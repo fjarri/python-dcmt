@@ -17,7 +17,11 @@ Changelog
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Using slightly optimized random number generation taken from ``numpy`` 1.5.1;
-* (TODO) Implement base class for numpy.random.Random (to get various random distributions)
+* Module is rewritten using Cython;
+* Exporting analogues of Python standard ``random.Random`` and ``numpy``'s
+  ``numpy.random.mtrand.RandomState``;
+* Renamed ``create_mts`` to ``mt_range``, which now returns dictionary and
+  ``numpy`` array instead of ``ctypes`` structures;
 
 ~~~~~~~
 0.6.1-2
