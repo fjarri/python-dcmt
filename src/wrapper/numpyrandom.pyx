@@ -111,10 +111,11 @@ cdef class DcmtRandomState:
 	cdef mt_struct *mt
 
 	def __init__(self, wordlen=32, exponent=521, id=0, seed=None):
-		validate_parameters(wordlen, exponent, id, id)
+		cdef int w, p, mid, sid
+		validate_parameters(wordlen, exponent, id, id, &w, &p, &sid, &mid)
 		seed = get_seed(seed)
 
-		self.mt = get_mt_parameter_id_st(wordlen, exponent, id, seed)
+		self.mt = get_mt_parameter_id_st(w, p, sid, seed)
 
 	def __dealloc__(self):
 		if self.mt != NULL:
@@ -179,6 +180,7 @@ cdef class DcmtRandomState:
 
 	@classmethod
 	def range(cls, *args, wordlen=32, exponent=521, seed=None):
+		cdef int w, p, mid, sid
 
 		if len(args) == 1:
 			start_id = 0
@@ -192,14 +194,13 @@ cdef class DcmtRandomState:
 		if max_id < start_id:
 			return []
 
-		validate_parameters(wordlen, exponent, start_id, max_id)
+		validate_parameters(wordlen, exponent, start_id, max_id, &w, &p, &sid, &mid)
 		cdef uint32_t s = get_seed(seed)
 
 		cdef int count, i
-		cdef mt_struct **mts = get_mt_parameters_st(wordlen, exponent,
-			start_id, max_id, s, &count)
+		cdef mt_struct **mts = get_mt_parameters_st(w, p, sid, mid, s, &count)
 
-		if count < max_id - start_id + 1 or mts == NULL:
+		if count < mid - sid + 1 or mts == NULL:
 			raise DcmtError("dcmt internal error: could not create all requested RNGs")
 
 		cdef DcmtRandomState rng
@@ -249,6 +250,8 @@ cdef class DcmtRandomState:
 
 def mt_range(*args, wordlen=32, exponent=521, seed=None):
 
+	cdef int w, p, mid, sid
+
 	if len(args) == 1:
 		start_id = 0
 		max_id = args[0] - 1
@@ -261,14 +264,13 @@ def mt_range(*args, wordlen=32, exponent=521, seed=None):
 	if max_id < start_id:
 		return []
 
-	validate_parameters(wordlen, exponent, start_id, max_id)
+	validate_parameters(wordlen, exponent, start_id, max_id, &w, &p, &mid, &sid)
 	cdef uint32_t s = get_seed(seed)
 
 	cdef int count
-	cdef mt_struct **mts = get_mt_parameters_st(wordlen, exponent,
-		start_id, max_id, s, &count)
+	cdef mt_struct **mts = get_mt_parameters_st(w, p, sid, mid, s, &count)
 
-	if count < max_id - start_id + 1 or mts == NULL:
+	if count < mid - sid + 1 or mts == NULL:
 		raise DcmtError("dcmt internal error: could not create all requested RNGs")
 
 	common_fields = get_mt_struct_fields(mts[0])

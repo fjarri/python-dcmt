@@ -15,7 +15,7 @@ cdef class RandomContainer:
 	cdef initWithStruct(self, mt_struct *mt):
 		self.mt = mt
 
-	def initWithParams(self, wordlen, exponent, id, seed):
+	cdef initWithParams(self, int wordlen, int exponent, int id, int seed):
 		self.mt = get_mt_parameter_id_st(wordlen, exponent, id, seed)
 
 	def __dealloc__(self):
@@ -123,11 +123,13 @@ cdef class RandomContainer:
 class DcmtRandom(Random):
 
 	def __init__(self, wordlen=32, exponent=521, id=0, seed=None):
-		validate_parameters(wordlen, exponent, id, id)
+		cdef int w, p, mid, sid
 		cdef uint32_t s = get_seed(seed)
 
+		validate_parameters(wordlen, exponent, id, id, &w, &p, &sid, &mid)
+
 		self.mt = <RandomContainer>RandomContainer()
-		self.mt.initWithParams(wordlen, exponent, id, s)
+		self.mt.initWithParams(w, p, sid, s)
 
 	def seed(self, a=None):
 		cdef uint32_t seed = get_seed(a)
@@ -161,6 +163,8 @@ class DcmtRandom(Random):
 	@classmethod
 	def range(cls, *args, wordlen=32, exponent=521, seed=None):
 
+		cdef int w, p, mid, sid
+
 		if len(args) == 1:
 			start_id = 0
 			max_id = args[0] - 1
@@ -173,12 +177,11 @@ class DcmtRandom(Random):
 		if max_id < start_id:
 			return []
 
-		validate_parameters(wordlen, exponent, start_id, max_id)
+		validate_parameters(wordlen, exponent, start_id, max_id, &w, &p, &sid, &mid)
 		cdef uint32_t s = get_seed(seed)
 
 		cdef int count, i
-		cdef mt_struct **mts = get_mt_parameters_st(wordlen, exponent,
-			start_id, max_id, s, &count)
+		cdef mt_struct **mts = get_mt_parameters_st(w, p, sid, mid, s, &count)
 
 		if count < max_id - start_id + 1 or mts == NULL:
 			raise DcmtError("dcmt internal error: could not create all requested RNGs")

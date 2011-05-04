@@ -10,6 +10,7 @@ cdef extern from "Python.h":
 	object _PyLong_FromByteArray(unsigned char* bytes, size_t n, int little_endian, int is_signed)
 	unsigned long PyInt_AsUnsignedLongMask(object io)
 	object PyInt_FromLong(long ival)
+	long PyInt_AsLong(object io)
 	object PyLong_FromUnsignedLong(unsigned long v)
 
 cdef extern from "inttypes.h":
@@ -69,21 +70,34 @@ cdef uint32_t get_seed(object seed) except? -1:
 	# not checking for overflow now, since we need 4 lower bytes anyway
 	return PyInt_AsUnsignedLongMask(seed)
 
-def validate_parameters(wordlen, exponent, start_id, max_id):
+cdef void validate_parameters(wordlen, exponent, start_id, max_id,
+		int *c_wordlen, int *c_exponent, int *c_start_id, int *c_max_id) except *:
 	"""Return valid parameter or raise an exception"""
 
-	if start_id > max_id:
+	cdef int w, p, sid, mid
+
+	w = <int>PyInt_AsLong(wordlen)
+	p = <int>PyInt_AsLong(exponent)
+	sid = <int>PyInt_AsLong(start_id)
+	mid = <int>PyInt_AsLong(max_id)
+
+	if sid > mid:
 		raise DcmtParameterError("Starting ID must be equal to or lower than maximum ID")
 
-	if start_id < 0 or max_id > 65535:
+	if sid < 0 or mid > 65535:
 		raise DcmtParameterError("All IDs must lie between 0 and 65535")
 
-	if wordlen == 31 and exponent == 521 and start_id <= 9 and max_id >= 9:
+	if w == 31 and p == 521 and sid <= 9 and mid >= 9:
 		raise DcmtParameterError("Known bug: cannot create generator for wordlen=31, exponent=521, id=9")
 
-	if wordlen not in (31, 32):
+	if w != 31 and w != 32:
 		raise DcmtParameterError("Word length must be equal to 31 or 32")
 
-	if exponent not in (521, 607, 1279, 2203, 2281, 3217, 4253, 4423,
+	if p not in (521, 607, 1279, 2203, 2281, 3217, 4253, 4423,
 			9689, 9941, 11213, 19937, 21701, 23209, 44497):
 		raise DcmtParameterError("Mersenne exponent is incorrect or not from a supported set")
+
+	c_wordlen[0] = w
+	c_exponent[0] = p
+	c_start_id[0] = sid
+	c_max_id[0] = mid
