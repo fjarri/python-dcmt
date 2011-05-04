@@ -130,37 +130,37 @@ class DcmtRandom(Random):
 
 		validate_parameters(wordlen, exponent, id, id, &w, &p, &sid, &mid)
 
-		self.mt = <RandomContainer>RandomContainer()
-		self.mt.initWithParams(w, p, sid, s)
+		self.rc = <RandomContainer>RandomContainer()
+		self.rc.initWithParams(w, p, sid, s)
 
 	def seed(self, a=None):
 		cdef uint32_t seed = get_seed(a)
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		mt.seed(seed)
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		rc.seed(seed)
 
 	def random(self):
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		return mt.random()
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		return rc.random()
 
 	def random_raw(self):
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		return mt.random_raw()
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		return rc.random_raw()
 
 	def getstate(self):
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		return mt.getstate()
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		return rc.getstate()
 
 	def setstate(self, state):
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		mt.setstate(state)
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		rc.setstate(state)
 
-	def getrandbits(self, kk):
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		return mt.getrandbits(kk)
+	def getrandbits(self, k):
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		return rc.getrandbits(k)
 
 	def jumpahead(self, n):
-		cdef RandomContainer mt = <RandomContainer>self.mt
-		mt.jumpahead(n)
+		cdef RandomContainer rc = <RandomContainer>self.rc
+		rc.jumpahead(n)
 
 	@classmethod
 	def range(cls, *args, wordlen=32, exponent=521, seed=None):
