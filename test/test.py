@@ -302,6 +302,12 @@ class TestRandomState(unittest.TestCase):
 			self.assert_((randoms0 == randoms1).all())
 
 
+def getLineCount(fname):
+	f = open(fname)
+	count = len(f.read().split('\n'))
+	f.close()
+	return count
+
 if __name__ == '__main__':
 
 	suites = []
@@ -318,3 +324,11 @@ if __name__ == '__main__':
 	unittest.TextTestRunner(verbosity=1).run(all_tests)
 
 	gc.collect() # additional test for different pointer- and reference- related bugs
+
+	# Temporary measure while I'm optimizing C/Python ratio in .pyx files
+	cython_files = [
+		'../src/wrapper/pyrandom.c',
+		'../src/wrapper/numpyrandom.c'
+	]
+	for fname in cython_files:
+		print "File: " + fname + ": " + str(getLineCount(fname)) + " lines"
