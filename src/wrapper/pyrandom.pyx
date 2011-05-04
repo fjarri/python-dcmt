@@ -12,11 +12,13 @@ cdef class RandomContainer:
 	def __init__(self):
 		self.mt = NULL
 
-	cdef initWithStruct(self, mt_struct *mt):
+	cdef void initWithStruct(self, mt_struct *mt):
 		self.mt = mt
 
-	cdef initWithParams(self, int wordlen, int exponent, int id, int seed):
+	cdef void initWithParams(self, int wordlen, int exponent, int id, int seed) except *:
 		self.mt = get_mt_parameter_id_st(wordlen, exponent, id, seed)
+		if self.mt == NULL:
+			raise DcmtError("Failed to create RNG")
 
 	def __dealloc__(self):
 		if self.mt != NULL:
