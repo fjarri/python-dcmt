@@ -74,12 +74,12 @@ c_sources = [
 pyrandom = Extension("dcmt.pyrandom",
 	include_dirs = ['src/dcmt/include', 'src/dcmt/lib'],
 	extra_compile_args = ['-Wall', '-Wmissing-prototypes', '-O3', '-std=c99'],
-	sources = c_sources + ['src/wrapper/pyrandom.' + 'pyx' if has_cython else 'c'])
+	sources = c_sources + ['src/wrapper/pyrandom.' + ('pyx' if has_cython else 'c')])
 
 numpyrandom = NumpyExtension("dcmt.numpyrandom",
 	include_dirs = ['src/dcmt/include', 'src/dcmt/lib'],
 	extra_compile_args = ['-Wall', '-Wmissing-prototypes', '-O3', '-std=c99'],
-	sources = c_sources + ['src/wrapper/numpyrandom.' + 'pyx' if has_cython else 'c'])
+	sources = c_sources + ['src/wrapper/numpyrandom.' + ('pyx' if has_cython else 'c')])
 
 setup(
 	name='dcmt',
