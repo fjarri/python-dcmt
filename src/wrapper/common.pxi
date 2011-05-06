@@ -125,9 +125,11 @@ cdef object create_mt_range(args, wordlen, exponent, seed, mt_struct ***mts, int
 	cdef mt_struct **m = get_mt_parameters_st(w, p, sid, mid, s, count)
 
 	if count[0] < max_id - start_id + 1 or mts == NULL:
+		py_count = PyInt_FromLong(count[0])
 		if mts != NULL:
 			free_mt_struct_array(m, count[0])
-		raise DcmtError("dcmt internal error: could not create all requested RNGs")
+		raise DcmtError("dcmt internal error: could not create all requested RNGs " +
+			"(failed at id=" + str(start_id + py_count) + ")")
 
 	mts[0] = m
 
