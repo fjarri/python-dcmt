@@ -16,6 +16,8 @@ Changelog
 0.6.1-4 (in development)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Fixed bug when mt_range() return 'common' parameters dict
+  with non-common parameters included
 * Fix issues with setuptools/distutils (one of them does not support Cython,
   other does not support Sphinx)
 

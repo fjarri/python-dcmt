@@ -67,8 +67,15 @@ cdef uint32_t uint32_from_python(object x):
 	return PyInt_AsUnsignedLongMask(x)
 
 cdef get_mt_struct_fields(mt_struct *mt):
+	common_fields = get_mt_struct_common_fields(mt)
+	common_fields['aaa'] = uint32_to_python(mt.aaa)
+	common_fields['maskB'] = uint32_to_python(mt.maskB)
+	common_fields['maskC'] = uint32_to_python(mt.maskC)
+	common_fields['i'] = int(mt.i)
+	return common_fields
+
+cdef get_mt_struct_common_fields(mt_struct *mt):
 	return {
-		'aaa': uint32_to_python(mt.aaa),
 		'mm': int(mt.mm),
 		'nn': int(mt.nn),
 		'rr': int(mt.rr),
@@ -79,10 +86,7 @@ cdef get_mt_struct_fields(mt_struct *mt):
 		'shift0': int(mt.shift0),
 		'shift1': int(mt.shift1),
 		'shiftB': int(mt.shiftB),
-		'shiftC': int(mt.shiftC),
-		'maskB': uint32_to_python(mt.maskB),
-		'maskC': uint32_to_python(mt.maskC),
-		'i': int(mt.i)
+		'shiftC': int(mt.shiftC)
 	}
 
 cdef set_mt_struct_fields(mt_struct *mt, mt_dict):
@@ -244,7 +248,7 @@ def mt_range(*args, wordlen=32, exponent=521, gen_seed=None):
 	if res != None:
 		return res
 
-	common_fields = get_mt_struct_fields(mts[0])
+	common_fields = get_mt_struct_common_fields(mts[0])
 
 	cdef ndarray unique_fields "arrayObject_unique"
 	unique_fields = <ndarray>numpy.empty((count, 4), numpy.uint32)
