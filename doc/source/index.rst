@@ -148,6 +148,11 @@ Reference
 
    For the information on keywords see `Mersenne twister RNG parameters`_.
 
+   .. py:method:: rand_fill(arr)
+
+      Fills given array with random double precision floating point random numbers.
+      The array must have ``numpy.float64`` type.
+
    .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, gen_seed=None)
 
       Analogue of built-in ``range`` which creates a list with :py:class:`DcmtRandomState` objects

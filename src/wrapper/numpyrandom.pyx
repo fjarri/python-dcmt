@@ -50,6 +50,7 @@ cdef extern from "numpy/arrayobject.h":
 	npy_intp PyArray_SIZE(ndarray arr)
 	object PyArray_ContiguousFromObject(object obj, NPY_TYPES type,
 		int mindim, int maxdim)
+	int PyArray_Check(object obj)
 
 	void import_array()
 
@@ -168,20 +169,30 @@ cdef class DcmtRandomState:
 		return self.random_sample(size=None if len(size) == 0 else size)
 
 	def random_sample(self, size=None):
+		if size is None:
+			return random_float(self.mt)
+		else:
+			array = numpy.empty(size, numpy.float64)
+			self.rand_fill(array)
+			return array
+
+	def rand_fill(self, arr):
 		cdef double *array_data
 		cdef ndarray array "arrayObject"
 		cdef long length
 		cdef long i
 
-		if size is None:
-			return random_float(self.mt)
-		else:
-			array = <ndarray>numpy.empty(size, numpy.float64)
-			length = PyArray_SIZE(array)
-			array_data = <double *>array.data
-			for i in range(length):
-				array_data[i] = random_float(self.mt)
-			return array
+		if not PyArray_Check(arr):
+			raise TypeError("function requires numpy array")
+
+		array = <ndarray>arr
+		if array.descr.type_num != NPY_DOUBLE:
+			raise TypeError("function requires numpy array of type float64")
+
+		length = PyArray_SIZE(array)
+		array_data = <double *>array.data
+		for i in range(length):
+			array_data[i] = random_float(self.mt)
 
 	@classmethod
 	def range(cls, *args, wordlen=32, exponent=521, gen_seed=None):

@@ -325,6 +325,24 @@ class TestRandomState(unittest.TestCase):
 			randoms1 = getRandomArray(rng1, N)
 			self.assert_((randoms0 == randoms1).all())
 
+	def testRandFill(self):
+		shape = (9, 10, 11)
+		rng = DcmtRandomState(gen_seed=900)
+		rng.seed(400)
+
+		wrong_val = "aaa"
+		wrong_arr = numpy.empty(shape, numpy.float32)
+		self.assertRaises(TypeError, rng.rand_fill, wrong_val)
+		self.assertRaises(TypeError, rng.rand_fill, wrong_arr)
+
+		randoms = numpy.empty(shape, numpy.float64)
+		rng.rand_fill(randoms)
+
+		self.assert_(randoms.shape == shape)
+		diff_mean, diff_var = testLimits(randoms, 0, 1)
+		self.assert_(diff_mean < 0.05)
+		self.assert_(diff_var < 0.05)
+
 	def testSingleRandom(self):
 		shape = (9, 10, 11)
 		rng = DcmtRandomState(gen_seed=900)
