@@ -12,6 +12,7 @@ cdef extern from "Python.h":
 	object PyInt_FromLong(long ival)
 	long PyInt_AsLong(object io)
 	object PyLong_FromUnsignedLong(unsigned long v)
+	object PyFloat_FromDouble(double v)
 
 cdef extern from "inttypes.h":
 	ctypedef unsigned int uint32_t

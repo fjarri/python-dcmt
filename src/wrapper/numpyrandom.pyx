@@ -173,7 +173,7 @@ cdef class DcmtRandomState:
 
 	def random_sample(self, size=None):
 		if size is None:
-			return random_float(self.mt)
+			return PyFloat_FromDouble(random_float(self.mt))
 		else:
 			array = numpy.empty(size, numpy.float64)
 			self.rand_fill(array)
