@@ -18,6 +18,8 @@ Changelog
 
 * Fixed bug when mt_range() return 'common' parameters dict
   with non-common parameters included
+* Add integer randoms generation to DcmtRandomState
+* Add 'inplace' function to fill provided numpy array with randoms
 * Fix issues with setuptools/distutils (one of them does not support Cython,
   other does not support Sphinx)
 
