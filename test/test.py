@@ -325,6 +325,14 @@ class TestRandomState(unittest.TestCase):
 			randoms1 = getRandomArray(rng1, N)
 			self.assert_((randoms0 == randoms1).all())
 
+	def testSingleRandom(self):
+		shape = (9, 10, 11)
+		rng = DcmtRandomState(gen_seed=900)
+		rng.seed(400)
+
+		r = rng.rand()
+		self.assert_(type(r) == float)
+
 
 def getLineCount(fname):
 	f = open(fname)

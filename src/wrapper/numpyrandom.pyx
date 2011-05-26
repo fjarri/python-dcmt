@@ -165,7 +165,7 @@ cdef class DcmtRandomState:
 		self.mt = mt
 
 	def rand(self, *size):
-		return self.random_sample(size=size)
+		return self.random_sample(size=None if len(size) == 0 else size)
 
 	def random_sample(self, size=None):
 		cdef double *array_data
