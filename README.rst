@@ -6,7 +6,7 @@ For licensing on original library and other information please see the link abov
 
 The version of the module corresponds to the version of original library, with the addition of the build number.
 For example, the wrapper on top of ``dcmt 0.6.1`` may have version like ``0.6.1-10``.
-Module documentation can be found `here <http://packages.python.org/python-dcmt>`_
+Module documentation can be found `here <http://packages.python.org/dcmt>`_
 
 =========
 Changelog
