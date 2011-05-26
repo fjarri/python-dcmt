@@ -130,9 +130,6 @@ Reference
 
    For the information on keywords see `Mersenne twister RNG parameters`_.
 
-   .. warning:: Unlike Python ``Random``, you must explicitly call ``seed`` method
-                at least once before using any object of this class.
-
    .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, seed=None)
 
       Analogue of built-in ``range`` which creates a list with :py:class:`DcmtRandom` objects
@@ -150,9 +147,6 @@ Reference
    along with pickling/copying support (which is missing in ``numpy`` class).
 
    For the information on keywords see `Mersenne twister RNG parameters`_.
-
-   .. warning:: Unlike Python ``Random``, you must explicitly call ``seed`` method
-                at least once before using any object of this class.
 
    .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, gen_seed=None)
 
