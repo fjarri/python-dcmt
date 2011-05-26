@@ -151,7 +151,19 @@ Reference
    .. py:method:: rand_fill(arr)
 
       Fills given array with random double precision floating point random numbers.
-      The array must have ``numpy.float64`` type.
+
+      :param arr: ``numpy`` array with type ``float64``.
+
+   .. py:method:: randraw_fill(arr)
+
+      Fills given array with raw random integers provided by underlying RNG.
+
+      :param arr: ``numpy`` array with any 4-byte elements
+             (``uint32_t`` if you want to see meaningful values).
+
+      .. warning:: The integers are not scaled in any way.
+                   So, if the RNG has ``wordlen`` equal to 31,
+                   all integers will belong to interval [0, 2 ** 31).
 
    .. py:classmethod:: range([start], stop, wordlen=32, exponent=521, id=0, gen_seed=None)
 

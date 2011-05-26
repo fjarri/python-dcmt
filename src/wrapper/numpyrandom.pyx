@@ -197,6 +197,24 @@ cdef class DcmtRandomState:
 		for i in range(length):
 			array_data[i] = random_float(self.mt)
 
+	def randraw_fill(self, arr):
+		cdef uint32_t *array_data
+		cdef ndarray array "arrayObject"
+		cdef long length
+		cdef long i
+
+		if not PyArray_Check(arr):
+			raise TypeError("function requires numpy array")
+
+		array = <ndarray>arr
+		if array.descr.elsize != 4:
+			raise TypeError("function requires numpy array with 4-byte elements")
+
+		length = PyArray_SIZE(array)
+		array_data = <uint32_t *>array.data
+		for i in range(length):
+			array_data[i] = random_uint32(self.mt)
+
 	@classmethod
 	def range(cls, *args, wordlen=32, exponent=521, gen_seed=None):
 		cdef int i, count
