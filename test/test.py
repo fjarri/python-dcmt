@@ -338,7 +338,6 @@ class TestRandomState(unittest.TestCase):
 		randoms = numpy.empty(shape, numpy.float64)
 		rng.rand_fill(randoms)
 
-		self.assert_(randoms.shape == shape)
 		diff_mean, diff_var = testLimits(randoms, 0, 1)
 		self.assert_(diff_mean < 0.05)
 		self.assert_(diff_var < 0.05)
