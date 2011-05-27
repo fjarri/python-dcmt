@@ -13,6 +13,13 @@ Changelog
 =========
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
+0.6.1-5 (in development)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix issues with setuptools/distutils (one of them does not support Cython,
+  other does not support Sphinx)
+
+~~~~~~~~~~~~~~~~~~~~~~~~
 0.6.1-4 (in development)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -21,10 +28,7 @@ Changelog
 * Fixed bug when DcmtRandomState.rand() returned array
   instead of Python float;
 * Added raw integer randoms generation to DcmtRandomState;
-* Added 'inplace' function to fill provided numpy array with randoms;
-
-* Fix issues with setuptools/distutils (one of them does not support Cython,
-  other does not support Sphinx)
+* Added 'inplace' function to fill provided numpy array with randoms
 
 ~~~~~~~
 0.6.1-3
